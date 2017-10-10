@@ -1,0 +1,36 @@
+#!/usr/bin/env sh
+
+{
+    openssl_check() {
+        if which openssl > /dev/null; then
+            return 0
+        fi
+        return 1
+    }
+
+    openssl_exec() {
+        opensslpath=$(openssl_path)
+        $opensslpath $@
+    }
+
+    openssl_deps() {
+        echo ""
+    }
+
+    openssl_install() {
+        >&2 echo "openssl will not be installed automatically"
+        exit 1
+    }
+
+    openssl_path() {
+        which openssl
+    }
+
+    command=$1
+    shift
+    case $command in
+        check | deps)
+            openssl_$command $@
+            ;;
+    esac
+}

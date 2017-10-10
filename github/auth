@@ -1,0 +1,115 @@
+#!/usr/bin/env sh
+
+{
+    . "$(dirname $0)/../common"
+
+    gen_gh_auth() {
+        curlscript="$(dirname $0)/../deps/curl"
+        curlheaders="/tmp/psocratic-gh-auth-headers.txt"
+        curlresponse="/tmp/psocratic-gh-auth-response.json"
+
+        github_username=""
+        github_password=""
+        githup_otp=""
+        github_otp_set=0
+
+        while [ $# -gt 0 ]; do
+            arg=$1
+            case $arg in
+                -github-username)
+                    github_username=$2
+                    shift
+                    ;;
+                -github-otp)
+                    github_otp=$2
+                    github_otp_set=1
+                    shift
+                    ;;
+                -github-password)
+                    github_password=$2
+                    shift
+                    ;;
+            esac
+            shift
+        done
+
+        otp_header_option=""
+        if [ $github_otp_set -eq 1 ]; then
+            otp_header_option="-H X-GitHub-OTP:$github_otp"
+        fi
+
+        http_code=$($curlscript exec https://api.github.com/authorizations \
+            -XPOST \
+            -H "Accept:vnd.github.v3+json" \
+            $otp_header_option \
+            -u "${github_username}:${github_password}" \
+            -d "{\"note\":\"psocratic-installer-$(date '+%s')\"}" \
+            -o $curlresponse \
+            --dump-header $curlheaders \
+            -w %{http_code} \
+            -s)
+        http_response=$(cat $curlresponse)
+        otp_header=$(cat $curlheaders \
+            | grep '^X-GitHub-OTP' \
+            | cut -d: -f2)
+
+        logerr "GitHub authentication status: $http_code"
+        if [ 201 -eq $http_code ]; then
+            logerr "successfully authenticated to GitHub"
+            echo "$http_response"
+            return 0
+        elif [ 401 -eq $http_code ]; then
+            2>&1 logerr "GitHub authentication status: 401"
+
+            otp_type=$(printf $otp_header | cut -d\; -f2)
+            if printf $otp_header | grep 'required;'; then
+                logerr "GitHub OTP $otp_header"
+
+                otp=$(prompt "Enter your GitHub $otp_type token")
+
+                gen_gh_auth -github-username $github_username \
+                    -github-otp $otp \
+                    -github-password $github_password
+                return $?
+            fi
+        fi
+
+        logerr $(cat $curlresponse)
+        rm -f $curlresponse $curlheaders
+        return 1
+    }
+
+    github_password=""
+    github_password_set=0
+    github_username=""
+    github_username_set=0
+
+    while [ $# -gt 0 ]; do
+        arg=$1
+        shift
+        case $arg in
+            -github-password)
+                github_password=$2
+                github_password_set=1
+                shift
+                ;;
+            -github-username)
+                github_user_name=$2
+                github_user_name_set=1
+                shift
+                ;;
+        esac
+    done
+
+    if [ $github_username_set -eq 0 ]; then
+        github_username=$(prompt "Enter your GitHub username:")
+    fi
+    if [ $github_password_set -eq 0 ]; then
+        github_password=$(prompt -s "Enter your GitHub password (hidden):")
+    fi
+
+    logerr "logging in to GitHub with username $github_username"
+    github_auth=$(gen_gh_auth -github-username $github_username -github-password $github_password)
+    echo $github_auth
+    return $?
+}

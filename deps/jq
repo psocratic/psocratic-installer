@@ -14,7 +14,6 @@
 
     jq_exec() {
         jqpath=$(jq_path)
-        >&2 echo jq $@
         $jqpath $@
     }
 

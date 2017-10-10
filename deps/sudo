@@ -1,0 +1,36 @@
+#!/usr/bin/env sh
+
+{
+    sudo_check() {
+        if which sudo > /dev/null; then
+            return 0
+        fi
+        return 1
+    }
+
+    sudo_exec() {
+        sudopath=$(sudo_path)
+        $sudopath $@
+    }
+
+    sudo_deps() {
+        echo ""
+    }
+
+    sudo_install() {
+        >&2 echo "sudo will not be installed automatically"
+        exit 1
+    }
+
+    sudo_path() {
+        which sudo
+    }
+
+    command=$1
+    shift
+    case $command in
+        check | deps | exec | install | path)
+            sudo_$command $@
+            ;;
+    esac
+}

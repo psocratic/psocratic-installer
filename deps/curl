@@ -14,7 +14,6 @@
 
     curl_exec() {
         curlpath=$(curl_path)
-        >&2 echo curl $@
         $curlpath $@
     }
 

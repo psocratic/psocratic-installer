@@ -1,0 +1,54 @@
+#!/usr/bin/env sh
+
+{
+    log() {
+        echo "[psocratic-installer] $@"
+    }
+
+    logf() {
+        template=$1
+        shift
+        printf "[psocratic-installer] $1" "$@"
+    }
+
+    logerr() {
+        >&2 log $@
+    }
+
+    logerrf() {
+        >&2 logf $@
+    }
+
+    logexit() {
+        logerr $@
+        exit 1
+    }
+
+    prompt() {
+        silent=0
+        text=""
+        while [ $# -gt 0 ]; do
+            arg=$1
+            if [ $# -eq 1 ]; then
+                text=$arg;
+            else
+                case $arg in
+                    -s)
+                        silent=1
+                        ;;
+                esac
+            fi
+            shift
+        done
+        logerr $text
+        >&2 printf "> "
+        if [ $silent -eq 1 ]; then
+            stty -echo
+        fi
+        read answer
+        if [ $silent -eq 1 ]; then
+            stty echo
+        fi
+        echo $answer
+    }
+}

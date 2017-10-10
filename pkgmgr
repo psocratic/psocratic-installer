@@ -1,0 +1,38 @@
+#!/usr/bin/env sh
+
+{
+    case "$(uname -s)" in
+        Linux*)
+            distro=$(lsb_release -is)
+            if [ 0 -ne $? ]; then
+                logerr "could not determine linux distribution"
+            fi
+            case $distro in
+                Debian*|Ubuntu*)
+                    impl="apt"
+                    ;;
+                *)
+                    logerr "unsupported linux distribution $distro"
+                    exit 1
+                    ;;
+            esac
+            ;;
+        Darwin*)
+            impl="macports"
+            ;;
+        *)
+            return 1
+    esac
+
+    command=$1
+    shift
+    case $command in
+        check | install | name | selfinstall)
+            pkg_impl="${0}.d/$impl"
+            $pkg_impl $command $@
+            ;;
+        *)
+            logexit "unrecognized pkgmgr command: $command"
+            ;;
+    esac
+}

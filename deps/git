@@ -1,0 +1,39 @@
+#!/usr/bin/env sh
+
+{
+    git_check() {
+        if which git > /dev/null; then
+            return 0
+        fi
+        return 1
+    }
+
+    git_deps() {
+        echo "curl"
+    }
+
+    git_exec() {
+        gitpath=$(git_path)
+        $gitpath $@
+    }
+
+    git_install() {
+        pkgmgr="$(dirname $0)/../pkgmgr"
+        $pkgmgr install git
+    }
+
+    git_path() {
+        if which git > /dev/null; then
+            which git
+            return
+        fi
+    }
+
+    command=$1
+    shift
+    case $command in
+        check | deps | exec | install | path)
+            git_$command $@
+            ;;
+    esac
+}

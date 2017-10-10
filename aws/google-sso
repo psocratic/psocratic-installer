@@ -1,0 +1,57 @@
+#!/usr/bin/env sh
+
+{
+    . "$(dirname $0)/../common"
+
+    AWS_SAML_ROLE="arn:aws:iam::018234796645:role/role-saml"
+    GOOGLE_IDP_ID="C02yeqkn3"
+    GOOGLE_SP_ID="70819311926"
+
+    gen_aws_auth() {
+        psocratic_email=""
+        while [ $# -gt 0 ]; do
+            arg=$1
+            logerr "arg=$arg"
+            case $arg in
+                -psocratic-email)
+                    psocratic_email=$2
+                    shift
+                    ;;
+            esac
+            shift
+        done
+
+        awsgauthscript="$(dirname $0)/../deps/aws-google-auth"
+
+        $awsgauthscript exec \
+            -u $psocratic_email \
+            -I $GOOGLE_IDP_ID \
+            -S $GOOGLE_SP_ID \
+            -p psocratic-installer
+        return $?
+    }
+
+    logerr $@
+    psocratic_email=""
+    psocratic_email_set=0
+
+    while [ $# -gt 0 ]; do
+        arg=$1
+        shift
+        case $arg in
+            -psocratic-email)
+                psocratic_email=$2
+                psocratic_email_set=1
+                shift
+                ;;
+        esac
+    done
+
+    if [ $psocratic_email_set -eq 0 ]; then
+        psocratic_email=$(prompt "Enter your Psocratic Gmail address (e.g.  name@psocratic.com):")
+    fi
+
+    logerr "Logging into Psocratic Google account as $psocratic_email"
+    gen_aws_auth -psocratic-email $psocratic_email
+    return $?
+}

@@ -1,0 +1,32 @@
+#!/usr/bin/env sh
+
+{
+    . "$(dirname $0)/../common"
+
+    apt_check() {
+        which apt-get > /dev/null
+    }
+
+    apt_install() {
+        sudo apt-get install -y --no-install-suggests --no-install-recommends $@
+    }
+
+    apt_name() {
+        echo "apt-get"
+    }
+
+    apt_selfinstall() {
+        logexit "apt will not be automatically installed"
+    }
+
+    command=$1
+    shift 1
+    case $command in
+        check | install | name | selfinstall)
+            apt_$command $@
+            ;;
+        *)
+            logexit "unsupported command for apt pkgmgr $command"
+            ;;
+    esac
+}

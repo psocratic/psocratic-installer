@@ -1,110 +1,13 @@
 #!/usr/bin/env sh
 
 {
-    AWS_SAML_ROLE="arn:aws:iam::018234796645:role/role-saml"
-    GOOGLE_IDP_ID="C02yeqkn3"
-    GOOGLE_SP_ID="70819311926"
-
-    gen_aws_creds() {
-        psocratic_email=""
-        while [ $# -gt 0 ]; do
-            arg=$1
-            case $arg in
-                -psocratic-email)
-                    psocratic_email=$2
-                    shift
-                    ;;
-            esac
-            shift
-        done
-        awsgauthscript="$(dirname $0)/deps/aws-google-auth"
-        $awsgauthscript exec \
-            -u $psocratic_email \
-            -I $GOOGLE_IDP_ID \
-            -S $GOOGLE_SP_ID \
-            -p psocratic-installer
-    }
-
-    gen_gh_creds() {
-        curlscript="$(dirname $0)/deps/curl"
-        curlheaders="/tmp/psocratic-gh-creds-headers.txt"
-        curlresponse="/tmp/psocratic-gh-creds-response.json"
-
-        github_username=""
-        github_password=""
-        githup_otp=""
-        github_otp_set=0
-
-        while [ $# -gt 0 ]; do
-            arg=$1
-            case $arg in
-                -github-username)
-                    github_username=$2
-                    shift
-                    ;;
-                -github-otp)
-                    github_otp=$2
-                    github_otp_set=1
-                    shift
-                    ;;
-                -github-password)
-                    github_password=$2
-                    shift
-                    ;;
-            esac
-            shift
-        done
-
-        otp_header_option=""
-        if [ $github_otp_set -eq 1 ]; then
-            otp_header_option="-H X-GitHub-OTP:$github_otp"
-        fi
-
-        http_code=$($curlscript exec https://api.github.com/authorizations \
-            -XPOST \
-            -H "Accept:vnd.github.v3+json" \
-            $otp_header_option \
-            -u "${github_username}:${github_password}" \
-            -d "{\"note\":\"psocratic-installer\"}" \
-            -o $curlresponse \
-            --dump-header $curlheaders \
-            -w %{http_code} \
-            -s)
-
-        log "GitHub authentication status: $http_code"
-        if [ 200 -eq $http_code ]; then
-            log "successfully authenticated to GitHub"
-            cat $curlresponse
-        elif [ 401 -eq $http_code ]; then
-            2>&1 log "GitHub authentication status: 401"
-
-            otp_header=$(cat $curlheaders \
-                | grep '^X-GitHub-OTP' \
-                | cut -d: -f2)
-
-            log "X-GitHub-OTP header: $otp_header"
-
-            if printf $otp_header | grep 'required;'; then
-                2>&1 log "GitHub OTP $otp_header"
-
-                otp_type=$(printf $otp_header | cut -d\; -f2)
-                otp=$(prompt "Enter your GitHub $otp_type token")
-
-                gen_gh_creds -github-username $github_username \
-                    -github-otp $otp \
-                    -github-password $github_password
-            fi
-        fi
-
-        rm $curlresponse
-        rm $curlheaders
-    }
+    . "$(dirname $0)/common"
 
     install_dep() {
         dep=$1
         depscript="$(dirname $0)/deps/$dep"
         if [ ! -f $depscript ] || [ ! -x $depscript ]; then
-            >&2 log "cannot install $dep: $depscript not found or not executable"
+            logerr "cannot install $dep: $depscript not found or not executable"
             exit 1
         fi
 
@@ -119,14 +22,11 @@
                 dep=$1
                 depscript="$(dirname $0)/deps/$dep"
             done
-            log "installing $dep"
             $depscript install
             if ! $depscript check; then
-                >&2 log "failed to install $dep"
+                logerr "failed to install $dep"
                 exit 1
             fi
-        else
-            log " => $dep is already installed :)"
         fi
     }
 
@@ -138,90 +38,25 @@
         done
     }
 
-    log() {
-        echo "[psocratic-installer] $@"
-    }
-
-    prompt() {
-        silent=0
-        text=""
-        while [ $# -gt 0 ]; do
-            arg=$1
-            if [ $# -eq 1 ]; then
-                text=$arg;
-            else
-                case $arg in
-                    -s)
-                        silent=1
-                        ;;
-                esac
-            fi
-            shift
-        done
-        >&2 log $text
-        >&2 printf "> "
-        if [ $silent -eq 1 ]; then
-            stty -echo
+    log "checking for pkgmgr"
+    pkgmgr="$(dirname $0)/pkgmgr"
+    if ! $pkgmgr check; then
+        if ! $pkgmgr selfinstall; then
+            logexit "failed to install $($pkgmgr name) pkgmgr"
+        else
+            log " => successfully installed $($pkgmgr name) pkgmgr"
         fi
-        read answer
-        if [ $silent -eq 1 ]; then
-            stty echo
-        fi
-        echo $answer
-    }
+    fi
 
-    main() {
-        install_deps
+    install_deps
 
-        github_password=""
-        github_password_set=0
-        github_username=""
-        github_username_set=0
-        psocratic_email=""
-        psocratic_email_set=0
+#    "$(dirname $0)/google-sso" $@
+#    if [ 0 -ne $? ]; then
+#        logexit "failed to log into Psocratic Google account"
+#    fi
 
-        while [ $# -gt 0 ]; do
-            arg=$1
-            shift
-            case $arg in
-                -github-username)
-                    github_username=$2
-                    github_usernmae_set=1
-                    shift
-                    ;;
-                -github-password)
-                    github_password=$2
-                    github_password_set=1
-                    shift
-                    ;;
-                -github-username)
-                    github_user_name=$2
-                    github_user_name_set=1
-                    shift
-                    ;;
-                -psocratic-email)
-                    psocratic_email=$2
-                    psocratic_email_set=1
-                    shift
-                    ;;
-            esac
-        done
-
-        #if [ $psocratic_email_set -eq 0 ]; then
-        #    psocratic_email=$(prompt "Enter your Psocratic email address (e.g.  firstname@psocratic.com:")
-        #fi
-        #log "Logging into Psocratic as $psocratic_email"
-        #gen_aws_creds -psocratic-email $psocratic_email
-
-        if [ $github_username_set -eq 0 ]; then
-            github_username=$(prompt "Enter your GitHub username:")
-        fi
-        if [ $github_password_set -eq 0 ]; then
-            github_password=$(prompt -s "Enter your GitHub password (hidden):")
-        fi
-        github_auth=$(gen_gh_creds -github-username $github_username -github-password $github_password)
-        printf "$github_auth"
-    }
-
-    main
+    github_auth=$("$(dirname $0)/github/auth" $@)
+    if [ 0 -ne $? ]; then
+        logexit "failed to log into GitHub"
+    fi
 }

@@ -29,7 +29,7 @@
     command=$1
     shift
     case $command in
-        check | deps)
+        check | deps | exec | install | path)
             sed_$command $@
             ;;
     esac
