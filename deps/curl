@@ -1,0 +1,40 @@
+#!/usr/bin/env sh
+
+{
+    curl_check() {
+        if which curl > /dev/null; then
+            return 0
+        fi
+        return 1
+    }
+
+    curl_deps() {
+        echo ""
+    }
+
+    curl_exec() {
+        curlpath=$(curl_path)
+        >&2 echo curl $@
+        $curlpath $@
+    }
+
+    curl_install() {
+        >&2 echo curl will not be installed automatically
+        exit 1
+    }
+
+    curl_path() {
+        if which curl > /dev/null; then
+            which curl
+            return
+        fi
+    }
+
+    command=$1
+    shift
+    case $command in
+        check | deps | exec | install | path)
+            curl_$command $@
+            ;;
+    esac
+}

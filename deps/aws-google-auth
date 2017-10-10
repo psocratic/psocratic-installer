@@ -1,0 +1,37 @@
+#!/usr/bin/env sh
+
+{
+    aws_google_auth_check() {
+        if PATH="$PATH:$HOME/.local/bin" which aws-google-auth > /dev/null; then
+            return 0
+        fi
+        return 1
+    }
+
+    aws_google_auth_deps() {
+        echo "python pip"
+    }
+
+    aws_google_auth_exec() {
+        aws_google_authpath=$(aws_google_auth_path)
+        $aws_google_authpath $@
+    }
+
+    aws_google_auth_install() {
+        sdir=$(dirname $0)
+        pipscript="$sdir/pip"
+        $pipscript exec install --upgrade --user aws-google-auth
+    }
+
+    aws_google_auth_path() {
+        PATH="$PATH:$HOME/.local/bin" which aws-google-auth
+    }
+
+    command=$1
+    shift
+    case $command in
+        check | deps | exec | install | path)
+            aws_google_auth_$command $@
+            ;;
+    esac
+}

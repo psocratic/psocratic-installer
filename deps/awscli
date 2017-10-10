@@ -1,0 +1,37 @@
+#!/usr/bin/env sh
+
+{
+    awscli_check() {
+        if PATH="$PATH:$HOME/.local/bin" which aws > /dev/null; then
+            return 0
+        fi
+        return 1
+    }
+
+    awscli_deps() {
+        echo "python pip"
+    }
+
+    awscli_exec() {
+        awsclipath=$(awscli_path)
+        $awsclipath $@
+    }
+
+    awscli_install() {
+        sdir=$(dirname $0)
+        pipscript="$sdir/pip"
+        $pipscript exec install --upgrade --user awscli
+    }
+
+    awscli_path() {
+        PATH="$PATH:$HOME/.local/bin" which aws
+    }
+
+    command=$1
+    shift
+    case $command in
+        check | deps | exec | install | path)
+            awscli_$command $@
+            ;;
+    esac
+}

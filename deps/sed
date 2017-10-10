@@ -1,0 +1,36 @@
+#!/usr/bin/env sh
+
+{
+    sed_check() {
+        if which sed > /dev/null; then
+            return 0
+        fi
+        return 1
+    }
+
+    sed_exec() {
+        sedpath=$(sed_path)
+        $sedpath $@
+    }
+
+    sed_deps() {
+        echo ""
+    }
+
+    sed_install() {
+        >&2 echo "sed will not be installed automatically"
+        exit 1
+    }
+
+    sed_path() {
+        which sed
+    }
+
+    command=$1
+    shift
+    case $command in
+        check | deps)
+            sed_$command $@
+            ;;
+    esac
+}

@@ -1,0 +1,52 @@
+#!/usr/bin/env sh
+
+{
+    pip_check() {
+        if which pip3 > /dev/null; then
+            return 0
+        fi
+        if which pip > /dev/null; then
+            return 0
+        fi
+        return 1
+    }
+
+    pip_deps() {
+        echo "python curl"
+    }
+
+    pip_exec() {
+        pippath=$(pip_path)
+        $pippath $@
+    }
+
+    pip_install() {
+        sdir="$(dirname $0)"
+        curlscript="$sdir/curl"
+        pythonscript="$sdir/python"
+        if ! $curlscript exec https://bootstrap.pypa.io/get-pip.py > /tmp/get-pip.py; then
+            >&2 echo failed to download pip installer
+            return 1
+        fi
+        if ! $pythonscript exec /tmp/get-pip.py --user; then
+            >&2 echo failed to install pip
+        fi
+    }
+
+    pip_path() {
+        for pip in pip3 pip; do
+            if which $pip > /dev/null; then
+                which $pip
+                return
+            fi
+        done
+    }
+
+    command=$1
+    shift
+    case $command in
+        check | deps | exec | install | path)
+            pip_$command $@
+            ;;
+    esac
+}

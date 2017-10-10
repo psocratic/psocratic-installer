@@ -1,0 +1,44 @@
+#!/usr/bin/env sh
+
+{
+    python_check() {
+        if which python3 > /dev/null; then
+            return 0
+        fi
+        if which python > /dev/null; then
+            return 0
+        fi
+        return 1
+    }
+
+    python_deps() {
+        echo ""
+    }
+
+    python_exec() {
+        pythonpath=$(python_path)
+        $pythonpath $@
+    }
+
+    python_install() {
+        >&2 echo python will not be installed automatically
+        exit 1
+    }
+
+    python_path() {
+        for python_ in python3 python; do
+            if which $python_ > /dev/null; then
+                which $python_
+                return
+            fi
+        done
+    }
+
+    command=$1
+    shift
+    case $command in
+        check | deps | exec | install | path)
+            python_$command $@
+            ;;
+    esac
+}

@@ -1,0 +1,36 @@
+#!/usr/bin/env sh
+
+{
+    grep_check() {
+        if which grep > /dev/null; then
+            return 0
+        fi
+        return 1
+    }
+
+    grep_exec() {
+        greppath=$(grep_path)
+        $greppath $@
+    }
+
+    grep_deps() {
+        echo ""
+    }
+
+    grep_install() {
+        >&2 echo "grep will not be installed automatically"
+        exit 1
+    }
+
+    grep_path() {
+        which grep
+    }
+
+    command=$1
+    shift
+    case $command in
+        check | deps)
+            grep_$command $@
+            ;;
+    esac
+}

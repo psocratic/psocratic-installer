@@ -1,0 +1,36 @@
+#!/usr/bin/env sh
+
+{
+    cut_check() {
+        if which cut > /dev/null; then
+            return 0
+        fi
+        return 1
+    }
+
+    cut_exec() {
+        cutpath=$(cut_path)
+        $cutpath $@
+    }
+
+    cut_deps() {
+        echo ""
+    }
+
+    cut_install() {
+        >&2 echo "cut will not be installed automatically"
+        exit 1
+    }
+
+    cut_path() {
+        which cut
+    }
+
+    command=$1
+    shift
+    case $command in
+        check | deps)
+            cut_$command $@
+            ;;
+    esac
+}
