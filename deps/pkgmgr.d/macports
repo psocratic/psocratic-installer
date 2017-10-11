@@ -4,10 +4,10 @@
     . "$(dirname $0)/../../common"
 
     macports_check() {
-        which -s xcode-select || return 1
+        which xcode-select > /dev/null || return 1
         test -d $(xcode-select -p) || return 1
         test -x "$(xcode-select -p)/usr/bin/gcc" || return 1
-        PATH="$HOME/.local/bin:$PATH" which -s port || return 1
+        PATH="$HOME/.local/bin:$PATH" which port > /dev/null || return 1
         PATH="$HOME/.local/bin:$PATH" port list > /dev/null || return 1
     }
 

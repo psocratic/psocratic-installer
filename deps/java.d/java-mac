@@ -8,21 +8,21 @@
     JDK_VOL="/Volumes/JDK 8 Update 144"
     JDK_PKG="$JDK_VOL/JDK 8 Update 144.pkg"
 
-    curl_macdmg_check() {
-        which -s java
+    java_mac_check() {
+        which java > /dev/null
         java -version 2>&1 | grep -q "^java version \"1.8.0"
     }
 
-    curl_macdmg_exec() {
-        curl_macdmgpath=$(curl_macdmg_path)
-        $curl_macdmgpath $@
+    java_mac_exec() {
+        java_macpath=$(java_mac_path)
+        $java_macpath $@
     }
 
-    curl_macdmg_deps() {
+    java_mac_deps() {
         echo "curl sudo pkgmgr.d/macdmg"
     }
 
-    curl_macdmg_install() {
+    java_mac_install() {
         curl -j -L --progress-bar \
             -H "Cookie: oraclelicense=accept-securebackup-cookie" \
             -o $HOME/Downloads/$JDK_DMG \
@@ -37,15 +37,15 @@
         rm "$HOME/Downloads/$JDK_DMG"; return $?
     }
 
-    curl_macdmg_path() {
-        curl_macdmg_check && which java
+    java_mac_path() {
+        java_mac_check && which java
     }
 
     command=$1
     shift
     case $command in
         check | deps | exec | install | path)
-            curl_macdmg_$command $@
+            java_mac_$command $@
             ;;
     esac
 }

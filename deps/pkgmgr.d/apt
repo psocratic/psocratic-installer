@@ -1,10 +1,10 @@
 #!/usr/bin/env sh
 
 {
-    . "$(dirname $0)/../common"
+    . "$(dirname $0)/../../common"
 
     apt_check() {
-        which apt-get -s
+        which apt-get > /dev/null
     }
 
     apt_deps() {
@@ -12,7 +12,10 @@
     }
 
     apt_install() {
-        sudo apt-get install -y --no-install-suggests --no-install-recommends $@
+        sudo="$(dirname $0)/../sudo"
+        $sudo exec apt-get install \
+            -y --no-install-suggests \
+            --no-install-recommends "$@"
     }
 
     apt_name() {

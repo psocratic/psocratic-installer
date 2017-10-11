@@ -2,30 +2,16 @@
 
 {
     case "$(uname -s)" in
-        Linux*)
-            distro=$(lsb_release -is)
-            if [ 0 -ne $? ]; then
-                logerr "could not determine linux distribution"
-            fi
-            case $distro in
-                Debian*|Ubuntu*)
-                    impl="pkgmgr"
-                    ;;
-                *)
-                    logerr "unsupported linux distribution $distro"
-                    exit 1
-                    ;;
-            esac
-            ;;
         Darwin*)
-            impl="curl-macdmg"
+            impl="mac"
             ;;
         *)
-            return 1
+            impl="standard"
+            ;;
     esac
 
     command=$1
-    pkg_impl="${0}.d/$impl"
+    pkg_impl="${0}.d/java-$impl"
     shift
     case $command in
         check | deps | install | name | selfinstall)

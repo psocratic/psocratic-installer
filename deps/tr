@@ -2,7 +2,7 @@
 
 {
     tr_check() {
-        which -s tr || return 1
+        which tr > /dev/null || return 1
     }
 
     tr_exec() {

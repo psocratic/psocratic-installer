@@ -4,9 +4,9 @@
     . "$(dirname $0)/../../common"
 
     macdmg_check() {
-        which -s diskutil || return 1
-        which -s hdiutil || return 1
-        which -s installer || return 1
+        which diskutil  > /dev/null || return 1
+        which hdiutil   > /dev/null || return 1
+        which installer > /dev/null || return 1
     }
 
     macdmg_deps() {

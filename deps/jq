@@ -5,7 +5,7 @@
 
     jq_check() {
         PATH="$HOME/.local/bin:$PATH"
-        which -s jq || return 1
+        which jq > /dev/null || return 1
     }
 
     jq_deps() {
