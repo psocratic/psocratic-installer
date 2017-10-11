@@ -1,0 +1,26 @@
+#!/usr/bin/env sh
+
+BRN="master"
+EXT=".zip"
+TMP="/tmp"
+URL="https://github.com/psocratic/psocratic-installer/archive/$BRN$EXT"
+DIR="$TMP/psocratic-installer-$BRN"
+ARX="$DIR$EXT"
+RUN="$DIR/install"
+
+for dep in curl zip; do
+    if ! which $dep > /dev/null; then
+        >&2 echo $dep not found
+        exit 1
+    fi
+done
+
+curl -L $URL -o $ARX
+if [ $? -ne 0 ]; then
+    >&2 echo failed to download $URL to $ARX
+    exit 1
+fi
+
+unzip $ARX -d $TMP
+
+$RUN $@
