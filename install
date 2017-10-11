@@ -34,9 +34,11 @@
     }
 
     install_deps() {
-        for depscript in $(ls $thisdir/deps/*); do
-            dep=$(basename $depscript)
-            install_dep $dep
+        for depscript in $(find $thisdir/deps -maxdepth 1 -type f); do
+            if [ -x $depscript ]; then
+                dep=$(basename $depscript)
+                install_dep $dep
+            fi
         done
     }
 
@@ -53,22 +55,12 @@
         shift
     done
 
-    log "checking for pkgmgr"
-    pkgmgr="$thisdir/pkgmgr"
-    if ! $pkgmgr check; then
-        if ! $pkgmgr selfinstall; then
-            logexit "failed to install $($pkgmgr name) pkgmgr"
-        else
-            log " => successfully installed $($pkgmgr name) pkgmgr"
-        fi
-    fi
-
     install_deps
 
-#    "$thisdir/google-sso" $copyargs
-#    if [ 0 -ne $? ]; then
-#        logexit "failed to log into Psocratic Google account"
-#    fi
+    "$thisdir/aws/google-sso" $copyargs
+    if [ 0 -ne $? ]; then
+        logexit "failed to log into Psocratic Google account"
+    fi
 
     github_auth=$("$thisdir/github/auth" $copyargs)
     if [ 0 -ne $? ]; then

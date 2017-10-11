@@ -4,14 +4,12 @@
     . "$(dirname $0)/../common"
 
     jq_check() {
-        if which jq > /dev/null; then
-            return 0
-        fi
-        return 1
+        PATH="$HOME/.local/bin:$PATH"
+        which -s jq || return 1
     }
 
     jq_deps() {
-        echo ""
+        echo "pkgmgr"
     }
 
     jq_exec() {
@@ -26,10 +24,8 @@
     }
 
     jq_path() {
-        if which jq > /dev/null; then
-            which jq
-            return
-        fi
+        PATH="$HOME/.local/bin:$PATH"
+        jq_check && which jq
     }
 
     command=$1

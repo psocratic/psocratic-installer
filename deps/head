@@ -1,0 +1,36 @@
+#!/usr/bin/env sh
+
+{
+    head_check() {
+        if which head > /dev/null; then
+            return 0
+        fi
+        return 1
+    }
+
+    head_exec() {
+        headpath=$(head_path)
+        $headpath $@
+    }
+
+    head_deps() {
+        echo ""
+    }
+
+    head_install() {
+        >&2 echo "head will not be installed automatically"
+        exit 1
+    }
+
+    head_path() {
+        which head
+    }
+
+    command=$1
+    shift
+    case $command in
+        check | deps | exec | install | path)
+            head_$command $@
+            ;;
+    esac
+}

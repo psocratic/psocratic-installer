@@ -1,0 +1,33 @@
+#!/usr/bin/env sh
+
+{
+    tr_check() {
+        which -s tr || return 1
+    }
+
+    tr_exec() {
+        trpath=$(tr_path)
+        $trpath $@
+    }
+
+    tr_deps() {
+        echo ""
+    }
+
+    tr_install() {
+        >&2 echo "tr will not be installed automatically"
+        exit 1
+    }
+
+    tr_path() {
+        which tr
+    }
+
+    command=$1
+    shift
+    case $command in
+        check | deps | exec | install | path)
+            tr_$command $@
+            ;;
+    esac
+}

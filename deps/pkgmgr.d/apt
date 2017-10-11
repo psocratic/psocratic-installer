@@ -7,6 +7,10 @@
         which apt-get > /dev/null
     }
 
+    apt_deps() {
+        echo ""
+    }
+
     apt_install() {
         sudo apt-get install -y --no-install-suggests --no-install-recommends $@
     }
@@ -22,7 +26,7 @@
     command=$1
     shift 1
     case $command in
-        check | install | name | selfinstall)
+        check | deps | install | name | selfinstall)
             apt_$command $@
             ;;
         *)

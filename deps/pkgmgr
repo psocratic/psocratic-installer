@@ -25,11 +25,14 @@
     esac
 
     command=$1
+    pkg_impl="${0}.d/$impl"
     shift
     case $command in
-        check | install | name | selfinstall)
-            pkg_impl="${0}.d/$impl"
+        check | deps | install | name | selfinstall)
             $pkg_impl $command $@
+            ;;
+        exec)
+            $pkg_impl install $@
             ;;
         *)
             logexit "unrecognized pkgmgr command: $command"

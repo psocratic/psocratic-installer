@@ -1,0 +1,107 @@
+#!/usr/bin/env sh
+
+{
+    . "$(dirname $0)/../../common"
+
+    macports_check() {
+        which -s xcode-select || return 1
+        test -d $(xcode-select -p) || return 1
+        test -x "$(xcode-select -p)/usr/bin/gcc" || return 1
+        PATH="$HOME/.local/bin:$PATH" which -s port || return 1
+        PATH="$HOME/.local/bin:$PATH" port list > /dev/null || return 1
+    }
+
+    macports_deps() {
+        echo "curl grep head sed tr"
+    }
+
+    macports_exec() {
+        PATH="$HOME/.local/bin:$PATH" port $@
+    }
+
+    macports_install() {
+        macports_exec -N install $@
+    }
+
+    macports_name() {
+        echo "port"
+    }
+
+    macports_selfinstall() {
+        macports_selfinstall_developer_command_line_tools
+        if [ $? -ne 0 ]; then
+            logerr "failed to install Xcode CommandLineTools"
+            return 1
+        fi
+
+        macports_selfinstall_macports
+        if [ $? -ne 0 ]; then
+            logerr "failed to install MacPorts"
+            return 1
+        fi
+    }
+
+    macports_selfinstall_developer_command_line_tools() {
+        logerr checking mac deps
+        for dep in softwareupdate; do
+            if ! which $dep > /dev/null; then
+                logerr "$dep not found, cannot be installed automatically"
+                return 1
+            fi
+        done
+
+        logerr installing Xcode CommandLineTools
+        # https://apple.stackexchange.com/a/195963
+		touch /tmp/.com.apple.dt.CommandLineTools.installondemand.in-progress;
+		PROD=$(softwareupdate -l |
+		    grep "\*.*Command Line" |
+		    head -n 1 | awk -F"*" '{print $2}' |
+		    sed -e 's/^ *//' |
+		    tr -d '\n')
+
+		softwareupdate -i "$PROD" --verbose;
+        return $?
+    }
+
+    macports_selfinstall_macports() {
+        version=$(macports_version)
+        logerr downloading and unpacking MacPorts-$version
+        curl --progress-bar -L https://github.com/macports/macports-base/releases/download/v$version/MacPorts-$version.tar.gz | tar -zx -C /tmp/
+        if [ $? -ne 0 ]; then
+            logerr "failed to download and unpac MacPorts-$version"
+            return 1
+        fi
+
+        logerr compiling and installing MacPorts-$version
+        olddir=$(pwd)
+        cd /tmp/MacPorts-$version \
+            && ./configure --prefix=$HOME/.local \
+                --with-no-root-privileges  \
+            && make && make install
+        rc=$?
+        cd $olddir
+
+        if [ $rc -ne 0 ]; then
+            logerr "failed to install MacPorts"
+            return 1
+        fi
+
+        macports_exec -v selfupdate
+        return $?
+    }
+
+    macports_version() {
+        echo "2.4.2"
+    }
+
+    command=$1
+    shift 1
+    case $command in
+        check | deps | install | name | selfinstall)
+            macports_$command $@
+            ;;
+        *)
+            logexit "unsupported command for macports pkgmgr $command"
+            ;;
+    esac
+}

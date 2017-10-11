@@ -1,0 +1,42 @@
+#!/usr/bin/env sh
+
+{
+    . "$(dirname $0)/../common"
+
+    java_check() {
+        if which java > /dev/null; then
+            return 0
+        fi
+        return 1
+    }
+
+    java_deps() {
+        echo ""
+    }
+
+    java_exec() {
+        javapath=$(java_path)
+        $javapath $@
+    }
+
+    java_install() {
+        pkgmgr="$(dirname $0)/../pkgmgr"
+        $pkgmgr install java
+        return $?
+    }
+
+    java_path() {
+        if which java > /dev/null; then
+            which java
+            return
+        fi
+    }
+
+    command=$1
+    shift
+    case $command in
+        check | deps | exec | install | path)
+            java_$command $@
+            ;;
+    esac
+}

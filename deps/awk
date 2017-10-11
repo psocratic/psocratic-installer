@@ -1,0 +1,36 @@
+#!/usr/bin/env sh
+
+{
+    awk_check() {
+        if which awk > /dev/null; then
+            return 0
+        fi
+        return 1
+    }
+
+    awk_exec() {
+        awkpath=$(awk_path)
+        $awkpath $@
+    }
+
+    awk_deps() {
+        echo ""
+    }
+
+    awk_install() {
+        >&2 echo "awk will not be installed automatically"
+        exit 1
+    }
+
+    awk_path() {
+        which awk
+    }
+
+    command=$1
+    shift
+    case $command in
+        check | deps | exec | install | path)
+            awk_$command $@
+            ;;
+    esac
+}

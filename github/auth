@@ -110,6 +110,7 @@
 
     logerr "logging in to GitHub with username $github_username"
     github_auth=$(gen_gh_auth -github-username $github_username -github-password $github_password)
+    rc=$?
     echo $github_auth
-    return $?
+    exit $?
 }

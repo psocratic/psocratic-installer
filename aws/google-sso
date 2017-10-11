@@ -53,5 +53,5 @@
 
     logerr "Logging into Psocratic Google account as $psocratic_email"
     gen_aws_auth -psocratic-email $psocratic_email
-    return $?
+    exit $?
 }
