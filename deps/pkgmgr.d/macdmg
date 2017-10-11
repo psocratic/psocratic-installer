@@ -1,0 +1,68 @@
+#!/usr/bin/env sh
+
+{
+    . "$(dirname $0)/../../common"
+
+    macdmg_check() {
+        which -s diskutil || return 1
+        which -s hdiutil || return 1
+        which -s installer || return 1
+    }
+
+    macdmg_deps() {
+        echo "sudo"
+    }
+
+    macdmg_install() {
+        dmg="" dmg_set=0
+        pkg="" pkg_set=0
+        vol="" vol_set=0
+
+        while [ $# -gt 0 ]; do
+            arg="$1"
+            case $arg in
+                -dmg)
+                    dmg="$2" dmg_set=1 shift ;;
+                -pkg)
+                    pkg="$2" pkg_set=1 shift ;;
+                -vol)
+                    vol="$2" vol_set=1 shift ;;
+            esac
+            shift
+        done
+
+        [ $dmg_set -eq 1 ] || return 1
+        [ $pkg_set -eq 1 ] || return 1
+        [ $vol_set -eq 1 ] || return 1
+
+        hdiutil attach "$dmg" || return 1
+
+        sudo="$(dirname $0)/../sudo"
+        $sudo exec installer -pkg "$pkg" -target / || return 1
+        diskutil unmount "$vol"; return $?
+    }
+
+    macdmg_name() {
+        echo "macdmg"
+    }
+
+    macdmg_path() {
+        macdmg_check
+        echo $0
+    }
+
+    macdmg_selfinstall() {
+        logexit "macdmg will not be automatically installed"
+    }
+
+    command=$1
+    shift 1
+    case $command in
+        check | deps | install | name | path | selfinstall)
+            macdmg_$command "$@"
+            ;;
+        *)
+            logexit "unsupported command for macdmg pkgmgr $command"
+            ;;
+    esac
+}

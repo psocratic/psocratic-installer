@@ -1,6 +1,8 @@
 #!/usr/bin/env sh
 
 {
+    . "$(dirname $0)/../common"
+
     sudo_check() {
         if which sudo > /dev/null; then
             return 0
@@ -10,7 +12,8 @@
 
     sudo_exec() {
         sudopath=$(sudo_path)
-        $sudopath $@
+        logerr "requesting sudo access to execute:\n $ $@\n"
+        $sudopath "$@"
     }
 
     sudo_deps() {
@@ -30,7 +33,7 @@
     shift
     case $command in
         check | deps | exec | install | path)
-            sudo_$command $@
+            sudo_$command "$@"
             ;;
     esac
 }

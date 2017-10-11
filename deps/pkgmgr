@@ -28,7 +28,7 @@
     pkg_impl="${0}.d/$impl"
     shift
     case $command in
-        check | deps | install | name | selfinstall)
+        check | deps | install | name | path | selfinstall)
             $pkg_impl $command $@
             ;;
         exec)

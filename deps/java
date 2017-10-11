@@ -1,42 +1,41 @@
 #!/usr/bin/env sh
 
 {
-    . "$(dirname $0)/../common"
-
-    java_check() {
-        if which java > /dev/null; then
-            return 0
-        fi
-        return 1
-    }
-
-    java_deps() {
-        echo ""
-    }
-
-    java_exec() {
-        javapath=$(java_path)
-        $javapath $@
-    }
-
-    java_install() {
-        pkgmgr="$(dirname $0)/../pkgmgr"
-        $pkgmgr install java
-        return $?
-    }
-
-    java_path() {
-        if which java > /dev/null; then
-            which java
-            return
-        fi
-    }
+    case "$(uname -s)" in
+        Linux*)
+            distro=$(lsb_release -is)
+            if [ 0 -ne $? ]; then
+                logerr "could not determine linux distribution"
+            fi
+            case $distro in
+                Debian*|Ubuntu*)
+                    impl="pkgmgr"
+                    ;;
+                *)
+                    logerr "unsupported linux distribution $distro"
+                    exit 1
+                    ;;
+            esac
+            ;;
+        Darwin*)
+            impl="curl-macdmg"
+            ;;
+        *)
+            return 1
+    esac
 
     command=$1
+    pkg_impl="${0}.d/$impl"
     shift
     case $command in
-        check | deps | exec | install | path)
-            java_$command $@
+        check | deps | install | name | selfinstall)
+            $pkg_impl $command "$@"
+            ;;
+        exec)
+            $pkg_impl install "$@"
+            ;;
+        *)
+            logexit "unrecognized java command: $command"
             ;;
     esac
 }

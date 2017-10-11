@@ -27,6 +27,11 @@
         echo "port"
     }
 
+    macports_path() {
+        macports_check && \
+            PATH="$HOME/.local/bin:$PATH" which port
+    }
+
     macports_selfinstall() {
         macports_selfinstall_developer_command_line_tools
         if [ $? -ne 0 ]; then
@@ -98,7 +103,7 @@
     shift 1
     case $command in
         check | deps | install | name | selfinstall)
-            macports_$command $@
+            macports_$command "$@"
             ;;
         *)
             logexit "unsupported command for macports pkgmgr $command"

@@ -4,7 +4,7 @@
     . "$(dirname $0)/../common"
 
     apt_check() {
-        which apt-get > /dev/null
+        which apt-get -s
     }
 
     apt_deps() {
@@ -19,6 +19,10 @@
         echo "apt-get"
     }
 
+    apt_path() {
+        apt_check && which apt-get
+    }
+
     apt_selfinstall() {
         logexit "apt will not be automatically installed"
     }
@@ -26,8 +30,8 @@
     command=$1
     shift 1
     case $command in
-        check | deps | install | name | selfinstall)
-            apt_$command $@
+        check | deps | install | name | path | selfinstall)
+            apt_$command "$@"
             ;;
         *)
             logexit "unsupported command for apt pkgmgr $command"
