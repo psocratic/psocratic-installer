@@ -15,6 +15,7 @@
     curl_exec() {
         curlpath=$(curl_path)
         $curlpath $@
+        return $?
     }
 
     curl_install() {

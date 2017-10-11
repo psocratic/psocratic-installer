@@ -15,6 +15,7 @@
     git_exec() {
         gitpath=$(git_path)
         $gitpath $@
+        return $?
     }
 
     git_install() {

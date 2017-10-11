@@ -15,6 +15,7 @@
     aws_google_auth_exec() {
         aws_google_authpath=$(aws_google_auth_path)
         $aws_google_authpath $@
+        return $?
     }
 
     aws_google_auth_install() {

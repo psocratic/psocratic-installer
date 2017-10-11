@@ -1,6 +1,8 @@
 #!/usr/bin/env sh
 
 {
+    . "$(dirname $0)/../common"
+
     jq_check() {
         if which jq > /dev/null; then
             return 0
@@ -9,7 +11,7 @@
     }
 
     jq_deps() {
-        echo "curl"
+        echo ""
     }
 
     jq_exec() {
@@ -18,30 +20,9 @@
     }
 
     jq_install() {
-        dest="$HOME/.local/bin/jq"
-        system=""
-        case "$(uname -s)" in
-            Linux*)
-                system="linux"
-                ;;
-            Darwin*)
-                system="osx"
-                ;;
-            *)
-                return 1
-        esac
-
-        url="https://github.com/stedolan/jq/releases/download/jq-1.5/jq-${system}-amd64"
-
-        curlscript="$(dirname $0)/curl"
-        mkdir -p $(dirname $dest)
-        if ! $curlscript exec $url -o $dest; then
-            return 1
-        else
-            chmod +x $dest
-        fi
-
-        return 0
+        pkgmgr="$(dirname $0)/../pkgmgr"
+        $pkgmgr install jq
+        return $?
     }
 
     jq_path() {

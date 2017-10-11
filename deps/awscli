@@ -15,6 +15,7 @@
     awscli_exec() {
         awsclipath=$(awscli_path)
         $awsclipath $@
+        return $?
     }
 
     awscli_install() {

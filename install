@@ -1,11 +1,14 @@
 #!/usr/bin/env sh
 
 {
-    . "$(dirname $0)/common"
+    thisdir="$(dirname $0)"
+    . "$thisdir/common"
+
+    PSOCRATIC_DIR="$HOME/.psocratic"
 
     install_dep() {
         dep=$1
-        depscript="$(dirname $0)/deps/$dep"
+        depscript="$thisdir/deps/$dep"
         if [ ! -f $depscript ] || [ ! -x $depscript ]; then
             logerr "cannot install $dep: $depscript not found or not executable"
             exit 1
@@ -20,7 +23,7 @@
                 unset depscript
                 install_dep $subdep
                 dep=$1
-                depscript="$(dirname $0)/deps/$dep"
+                depscript="$thisdir/deps/$dep"
             done
             $depscript install
             if ! $depscript check; then
@@ -31,15 +34,27 @@
     }
 
     install_deps() {
-        sdir=$(dirname $0)
-        for depscript in $(ls $sdir/deps/*); do
+        for depscript in $(ls $thisdir/deps/*); do
             dep=$(basename $depscript)
             install_dep $dep
         done
     }
 
+    copyargs="$@"
+    psocratic_dir="$PSOCRATIC_DIR"
+    while [ $# -gt 0 ]; do
+        arg=$1
+        case $arg in
+            -psocratic-dir)
+                psocratic_dir=$2
+                shift
+                ;;
+        esac
+        shift
+    done
+
     log "checking for pkgmgr"
-    pkgmgr="$(dirname $0)/pkgmgr"
+    pkgmgr="$thisdir/pkgmgr"
     if ! $pkgmgr check; then
         if ! $pkgmgr selfinstall; then
             logexit "failed to install $($pkgmgr name) pkgmgr"
@@ -50,13 +65,25 @@
 
     install_deps
 
-#    "$(dirname $0)/google-sso" $@
+#    "$thisdir/google-sso" $copyargs
 #    if [ 0 -ne $? ]; then
 #        logexit "failed to log into Psocratic Google account"
 #    fi
 
-    github_auth=$("$(dirname $0)/github/auth" $@)
+    github_auth=$("$thisdir/github/auth" $copyargs)
     if [ 0 -ne $? ]; then
         logexit "failed to log into GitHub"
+    fi
+    github_token=$(echo "$github_auth" | $thisdir/deps/jq exec -r .token)
+    if [ 0 -ne $? ]; then
+        logexit "failed to parse token from\n$github_auth"
+    fi
+
+    "$thisdir/github/clone" \
+        -github-token $github_token \
+        -github-repo psocratic/psocratic \
+        -local-dest $psocratic_dir
+    if [ 0 -ne $? ]; then
+        logexit "failed to clone git@github.com/psocratic/psocratic to $psocratic_dir"
     fi
 }

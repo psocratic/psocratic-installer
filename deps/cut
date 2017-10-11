@@ -11,6 +11,7 @@
     cut_exec() {
         cutpath=$(cut_path)
         $cutpath $@
+        return $?
     }
 
     cut_deps() {
