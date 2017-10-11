@@ -1,26 +1,86 @@
 #!/usr/bin/env sh
 
-BRN="master"
-EXT=".zip"
-TMP="/tmp"
-URL="https://github.com/psocratic/psocratic-installer/archive/$BRN$EXT"
-DIR="$TMP/psocratic-installer-$BRN"
-ARX="$DIR$EXT"
-RUN="$DIR/install"
+{
+    BRANCH="master"
+    TMP="/tmp"
+    URL="https://github.com/psocratic/psocratic-installer/archive/$BRANCH.zip"
+    INSTALLER_DIR="$TMP/psocratic-installer-$BRANCH"
+    ARCHIVE="$INSTALLER_DIR.zip"
+    INSTALL="$INSTALLER_DIR/install"
 
-for dep in curl zip; do
-    if ! which $dep > /dev/null; then
-        >&2 echo $dep not found
-        exit 1
-    fi
-done
+    check() {
+        for dep in curl zip; do
+            if ! which $dep > /dev/null; then
+                >&2 echo $dep not found
+                exit 1
+            fi
+        done
+    }
 
-curl -L $URL -o $ARX
-if [ $? -ne 0 ]; then
-    >&2 echo failed to download $URL to $ARX
-    exit 1
-fi
+    cleanup() {
+        keep_installer_archive=0
+        keep_installer_dir=0
+        
+        while [ $# -gt 0 ]; do
+            arg=$1
+            case $arg in
+                -keep-installer-archive)
+                    keep_installer_archive=1
+                    ;;
+                -keep-installer-dir)
+                    keep_installer_dir=1
+                    ;;
+            esac
+            shift
+        done
 
-unzip $ARX -d $TMP
+        if [ $keep_installer_archive -eq 0 ]; then
+            rm -rf $ARCHIVE
+        fi
+        if [ $keep_installer_dir -eq 0 ]; then
+            rm -rf $INSTALLER_DIR
+        fi
+    }
 
-$RUN $@
+    dl() {
+        curl -L $URL -o $ARCHIVE
+        if [ $? -ne 0 ]; then
+            >&2 echo failed to download $URL to $ARCHIVE
+            exit 1
+        fi
+    }
+
+    install() {
+        $INSTALL $@
+    }
+
+    unarchive() {
+        unzip $ARCHIVE -d $TMP
+    }
+
+    dlrun_args=""
+    endofoptions=0
+    install_args=""
+
+    while [ $# -gt 0 ]; do
+        arg=$1
+        case $arg in
+            --)
+                endofoptions=1
+                ;;
+            *)
+                if [ $endofoptions -eq 0 ]; then
+                    dlrun_args="$dlrun_args $arg"
+                else
+                    install_args="$install_args $arg"
+                fi
+                ;;
+        esac
+        shift
+    done
+
+    dl $dlrun_args
+    unarchive $dlrun_args
+    install $install_args
+    cleanup $dlrun_args
+}
