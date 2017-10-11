@@ -1,0 +1,63 @@
+#!/usr/bin/env sh
+
+{
+    . "$(dirname $0)/../common"
+
+    uuid_check() {
+        PATH="$HOME/.local/bin:$PATH"
+        which uuid > /dev/null || return 1
+    }
+
+    uuid_deps() {
+        echo "pkgmgr"
+    }
+
+    uuid_exec() {
+        uuidpath=$(uuid_path)
+        $uuidpath "$@"
+    }
+
+    uuid_install() {
+        pkgmgr="$(dirname $0)/pkgmgr"
+        pkgname="$(uuid_pkg_name)" || return 1
+        $pkgmgr install "$pkgname"
+        return $?
+    }
+
+    uuid_pkg_name() {
+        uname="$(uname -s)"
+        case $uname in
+            Linux*)
+                distro=$(lsb_release -is)
+                case $distro in
+                    Debian*|Ubuntu*)
+                        echo "uuid"
+                        return 0
+                        ;;
+                    *)
+                        return 1
+                        ;;
+                esac
+                ;;
+            Darwin*)
+                echo "ossp-uuid"
+                ;;
+            *)
+                return 1
+                ;;
+        esac
+    }
+
+    uuid_path() {
+        PATH="$HOME/.local/bin:$PATH"
+        uuid_check && which uuid
+    }
+
+    command=$1
+    shift
+    case $command in
+        check | deps | exec | install | path)
+            uuid_$command $@
+            ;;
+    esac
+}
