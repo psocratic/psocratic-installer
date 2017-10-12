@@ -110,19 +110,19 @@
         shift
     done
 
-    #detect_psocratic_dir $psocratic_dir \
-    #    && logexit "-psocratic-dir already exists at $psocratic_dir; \
-    #        please remove or move to another location before proceeding"
-    #psocratic_dir_env=$(detect_psocratic_dir_env) \
-    #    && logexit "detected environment variable PSOCRATIC_DIR=$psocratic_dir_env; \
-    #        please unset before proceeding"
-    #psocratic_dir_export=$(detect_psocratic_dir_export $shell_rc_file) \
-    #    && logerr "detected shell rc scripts that export PSOCRATIC_DIR:" \
-    #    && echo $psocratic_dir_export | while read line; do echo "\t$line"; done \
-    #    && logexit "please remove or comment out before proceeding"
+    detect_psocratic_dir $psocratic_dir \
+        && logexit "-psocratic-dir already exists at $psocratic_dir; \
+            please remove or move to another location before proceeding"
+    psocratic_dir_env=$(detect_psocratic_dir_env) \
+        && logexit "detected environment variable PSOCRATIC_DIR=$psocratic_dir_env; \
+            please unset before proceeding"
+    psocratic_dir_export=$(detect_psocratic_dir_export $shell_rc_file) \
+        && logerr "detected shell rc scripts that export PSOCRATIC_DIR:" \
+        && echo $psocratic_dir_export | while read line; do echo "\t$line"; done \
+        && logexit "please remove or comment out before proceeding"
 
-    #install_deps \
-    #    || logexit "failed to install all deps"
+    install_deps \
+        || logexit "failed to install all deps"
     aws_google_auth=$(aws_google_sso "$copyargs") \
         || logexit "failed to log into Psocratic Google account"
     github_auth=$(github_auth "$copyargs") \
