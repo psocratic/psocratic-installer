@@ -2,12 +2,9 @@
 
 {
     pip_check() {
-        if which pip3 > /dev/null; then
-            return 0
-        fi
-        if which pip > /dev/null; then
-            return 0
-        fi
+        PATH="$HOME/.local/bin:$PATH" 
+        which pip3 > /dev/null && return 0
+        which pip > /dev/null && return 0
         return 1
     }
 
@@ -16,6 +13,7 @@
     }
 
     pip_exec() {
+        PATH="$HOME/.local/bin:$PATH" 
         pippath=$(pip_path)
         $pippath $@
     }
@@ -34,12 +32,14 @@
     }
 
     pip_path() {
+        PATH="$HOME/.local/bin:$PATH" 
         for pip in pip3 pip; do
             if which $pip > /dev/null; then
                 which $pip
                 return
             fi
         done
+        return 1
     }
 
     command=$1

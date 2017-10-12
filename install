@@ -7,6 +7,9 @@
     thisdir="$(dirname $0)"
     . "$thisdir/common"
 
+    grepdep="$thisdir/deps/grep"
+    jqdep="$thisdir/deps/jq"
+
     aws_google_sso() {
         "$thisdir/aws/google-sso" "$@"; return $?
     }
@@ -26,10 +29,9 @@
     }
 
     detect_psocratic_dir_export() {
-        grep="$(dirname $0)/deps/grep"
         shell_rc_file="$1"
         source="$HOME/.*shrc $HOME/.*profile $shell_rc_file"
-        results=$($grep exec -nsP '^(?!\s*#\s*)[^#]*export\s+PSOCRATIC_DIR' $source)
+        results=$($grepdep exec -nsP '^(?!\s*#\s*)[^#]*export\s+PSOCRATIC_DIR' $source)
 
         if [ -n "$results" ]; then
             echo "$results"
@@ -56,7 +58,6 @@
     }
 
     shell_append_psocratic_init_to_rc_file() {
-        grep="$(dirname $0)/deps/grep"
         psocratic_dir="$1"
         shell_rc_file="$2"
 
@@ -75,7 +76,7 @@
             echo "$rcstring" >> "$shell_rc_file"
         else
             echo "$rcstring" >> "$HOME/.profile"
-            if ! $($grep exec -sqP \
+            if ! $($grepdep exec -sqP \
                     "^\s*.\s*($HOME/|\$HOME|~/).profile" "$shell_rc_file"); then
                 echo "\n. \$HOME/.profile" >> "$shell_rc_file"
             fi
@@ -133,8 +134,24 @@
     shell_append_psocratic_init_to_rc_file $psocratic_dir $shell_rc_file
 
     export PSOCRATIC_DIR=$psocratic_dir && . $psocratic_dir/toolbelt/psocratic
+
     psocratic_email=$(echo $aws_google_auth \
-        | $thisdir/deps/jq exec  jq -r .user_email)
-    psocratic user identify -email $psocratic_email \
-        -github-token $github_token
+        | $thisdir/deps/jq exec -r .user_email)
+    aws_access_key=$(echo $aws_google_auth \
+        | $thisdir/deps/jq exec -r .aws_access_key_id)
+    aws_secret_key=$(echo $aws_google_auth \
+        | $thisdir/deps/jq exec -r .aws_secret_access_key)
+    aws_session_token=$(echo $aws_google_auth \
+        | $thisdir/deps/jq exec -r .aws_session_token)
+    aws_security_token=$(echo $aws_google_auth \
+        | $thisdir/deps/jq exec -r .aws_security_token)
+
+    psocratic user identify                       \
+        -aws-access-key "$aws_access_key"         \
+        -aws-secret-key  "$aws_secret_key"        \
+        -aws-session-token "$aws_session_token"   \
+        -aws-security-token "$aws_security_token" \
+        -email "$psocratic_email"                 \
+        -github-token "$github_token"             \
+        || return $?
 }

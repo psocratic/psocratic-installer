@@ -2,10 +2,7 @@
 
 {
     aws_google_auth_check() {
-        if PATH="$PATH:$HOME/.local/bin" which aws-google-auth > /dev/null; then
-            return 0
-        fi
-        return 1
+        PATH="$PATH:$HOME/.local/bin:$PATH" which aws-google-auth > /dev/null || return 1
     }
 
     aws_google_auth_deps() {
@@ -14,7 +11,7 @@
 
     aws_google_auth_exec() {
         aws_google_authpath=$(aws_google_auth_path)
-        $aws_google_authpath $@
+        $aws_google_authpath "$@"
         return $?
     }
 
@@ -25,7 +22,7 @@
     }
 
     aws_google_auth_path() {
-        PATH="$PATH:$HOME/.local/bin" which aws-google-auth
+        PATH="$PATH:$HOME/.local/bin:$PATH" which aws-google-auth
     }
 
     command=$1

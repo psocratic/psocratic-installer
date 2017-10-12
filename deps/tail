@@ -1,0 +1,33 @@
+#!/usr/bin/env sh
+
+{
+    tail_check() {
+        which tail > /dev/null || return 1
+    }
+
+    tail_exec() {
+        tailpath=$(tail_path)
+        $tailpath "$@"
+    }
+
+    tail_deps() {
+        echo ""
+    }
+
+    tail_install() {
+        >&2 echo "tail will not be installed automatically"
+        exit 1
+    }
+
+    tail_path() {
+        tail_check && which tail
+    }
+
+    command=$1
+    shift
+    case $command in
+        check | deps | exec | install | path)
+            tail_$command "$@"
+            ;;
+    esac
+}

@@ -1,13 +1,34 @@
 #!/usr/bin/env sh
 
-{
-    . "$(dirname $0)/../common"
+{ . "$(dirname $0)/../common"
 
+    AWS_CREDS_PROFILE="psocratic"
     AWS_SAML_ROLE="arn:aws:iam::018234796645:role/role-saml"
     GOOGLE_IDP_ID="C02yeqkn3"
     GOOGLE_SP_ID="70819311926"
 
-    gen_aws_auth() {
+    grepdep="$(dirname $0)/../deps/grep"
+    taildep="$(dirname $0)/../deps/tail"
+    jqdep="$(dirname $0)/../deps/jq"
+
+    aws_creds_to_json() {
+
+        cred_file=$1
+        cred_profile=$2
+
+        cat $HOME/.aws/credentials \
+            | $grepdep exec -a4 $AWS_CREDS_PROFILE \
+            | $taildep exec -n4 \
+            | $jqdep exec --raw-input --slurp \
+                "  split(\"\n\")              \
+                 | map(split(\" = \"))        \
+                 | map({key:.[0],value:.[1]}) \
+                 | map(select(.key!=null))    \
+                 | from_entries"              \
+            || return $?
+    }
+
+    aws_gen_auth() {
         psocratic_email=""
         while [ $# -gt 0 ]; do
             arg=$1
@@ -26,8 +47,7 @@
             -u $psocratic_email \
             -I $GOOGLE_IDP_ID \
             -S $GOOGLE_SP_ID \
-            -p psocratic-installer 1>&2
-        return $?
+            -p $AWS_CREDS_PROFILE 1>&2 || return $?
     }
 
     logerr $@
@@ -51,9 +71,10 @@
     fi
 
     logerr "Logging into Psocratic Google account as $psocratic_email"
-    gen_aws_auth -psocratic-email $psocratic_email 1>&2
-    rc=$?
+    aws_gen_auth -psocratic-email $psocratic_email 1>&2 || return $?
 
-    echo "{ \"user_email\": \"$psocratic_email\" }"
-    exit $rc
+    aws_creds_to_json \
+        $HOME/.aws/credentials $AWS_CREDS_PROFILE \
+        | $jqdep exec -S ".user_email = \"$psocratic_email\"" \
+        || return $?
 }

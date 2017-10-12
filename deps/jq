@@ -14,7 +14,7 @@
 
     jq_exec() {
         jqpath=$(jq_path)
-        $jqpath $@
+        $jqpath "$@"
     }
 
     jq_install() {
@@ -32,7 +32,7 @@
     shift
     case $command in
         check | deps | exec | install | path)
-            jq_$command $@
+            jq_$command "$@"
             ;;
     esac
 }

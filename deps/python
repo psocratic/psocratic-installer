@@ -2,12 +2,9 @@
 
 {
     python_check() {
-        if which python3 > /dev/null; then
-            return 0
-        fi
-        if which python > /dev/null; then
-            return 0
-        fi
+        PATH="$HOME/.local/bin:$PATH"
+        which python3 > /dev/null && return 0
+        which python > /dev/null && return 0
         return 1
     }
 
@@ -26,12 +23,14 @@
     }
 
     python_path() {
+        PATH="$HOME/.local/bin:$PATH"
         for python_ in python3 python; do
             if which $python_ > /dev/null; then
                 which $python_
                 return
             fi
         done
+        return 1
     }
 
     command=$1
