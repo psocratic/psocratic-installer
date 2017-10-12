@@ -1,81 +1,140 @@
 #!/usr/bin/env sh
 
 {
+    DEFAULT_PSOCRATIC_DIR="$HOME/.psocratic"
+    DEFAULT_PSOCRATIC_REPO="psocratic/psocratic"
+
     thisdir="$(dirname $0)"
     . "$thisdir/common"
 
-    PSOCRATIC_DIR="$HOME/.psocratic"
+    aws_google_sso() {
+        "$thisdir/aws/google-sso" "$@"; return $?
+    }
 
-    install_dep() {
-        dep=$1
-        depscript="$thisdir/deps/$dep"
-        if [ ! -f $depscript ] || [ ! -x $depscript ]; then
-            logerr "cannot install $dep: $depscript not found or not executable"
-            exit 1
+    detect_psocratic_dir() {
+        [ -e "$1" ] && return 0 || return 1
+    }
+
+    detect_psocratic_dir_env() {
+        if [ -n "$PSOCRATIC_DIR" ]; then
+            echo "$PSOCRATIC_DIR"
+            return 0
+        else
+            logerr "no PSOCRATIC_DIR environment variable detected"
+            return 1
+        fi
+    }
+
+    detect_psocratic_dir_export() {
+        if ! which grep > /dev/null; then
+            logerr "could not detect PSOCRATIC_DIR export: grep not found"
+            return 1
         fi
 
-        log "checking for $dep"
-        if ! $depscript check; then
-            log "checking dependencies of $dep"
-            for subdep in $($depscript deps); do
-                log " => $dep depends on $subdep"
-                unset dep
-                unset depscript
-                install_dep $subdep
-                dep=$1
-                depscript="$thisdir/deps/$dep"
-            done
-            $depscript install
-            if ! $depscript check; then
-                logerr "failed to install $dep"
-                exit 1
-            fi
+        shell_rc_file="$1"
+        source="$HOME/.*shrc $HOME/.*profile $shell_rc_file"
+        results=$(grep -nsP '^(?!\s*#\s*)[^#]*export\s+PSOCRATIC_DIR' $source)
+
+        if [ -n "$results" ]; then
+            echo "$results"
+            return 0
+        else
+            logerr "no PSOCRATIC_DIR export detected"
+            return 1
         fi
+    }
+
+    github_auth() {
+        "$thisdir/github/auth" "$@"; return $?
+    }
+
+    github_clone() {
+        "$thisdir/github/clone" \
+            -github-token $1 \
+            -github-repo $2 \
+            -local-dest $3; return $?
     }
 
     install_deps() {
-        for depscript in $(find $thisdir/deps -maxdepth 1 -type f); do
-            if [ -x $depscript ]; then
-                dep=$(basename $depscript)
-                install_dep $dep
-            fi
-        done
+        "$(dirname $0)/deps/all" install; return $?
+    }
+
+    shell_append_psocratic_init_to_rc_file() {
+        psocratic_dir="$1"
+        shell_rc_file="$2"
+
+        rcstring="[ -d $psocratic_dir ] && export PSOCRATIC_DIR=\"$psocratic_dir\" && . $psocratic_dir/toolbelt/psocratic"
+
+        if [ -z "$shell_rc_file" ] \
+            && ! shell_rc_file=$(shell_get_rc_file); then
+            logerr "could not determine shell rc file"
+            logerr "please add the following to your shell's initialization file:"
+            >&2 echo "$rcstring"
+            return 1
+        fi
+
+        echo "$rcstring" >> "$shell_rc_file"
+
+        case "$(uname -s)" in
+            Darwin)
+                if ! grep -sqP "^[[:space]]*.[[:space]]*($HOME/|~/).profile" "$rcfile"; then
+                    echo ". $HOME/.profile" >> "$rcfile"
+                fi
+                ;;
+        esac
+    }
+
+    shell_get_rc_file() {
+        shell=$(basename $SHELL)
+
+        case $shell in
+            bash) rcfile="$HOME/.bashrc" ;;
+            zsh) rcfile="$HOME/.zshrc" ;;
+            *)
+                return 1
+                ;;
+        esac
+
+        echo $rcfile
     }
 
     copyargs="$@"
-    psocratic_dir="$PSOCRATIC_DIR"
+    psocratic_dir="$DEFAULT_PSOCRATIC_DIR"
+    shell_rc_file=""
     while [ $# -gt 0 ]; do
         arg=$1
         case $arg in
-            -psocratic-dir)
-                psocratic_dir=$2
-                shift
-                ;;
+            -psocratic-dir) psocratic_dir=$2 shift ;;
+            -shell-rc-file) shell_rc_file=$2 shift ;;
         esac
         shift
     done
 
-    install_deps
+    #detect_psocratic_dir $psocratic_dir \
+    #    && logexit "-psocratic-dir already exists at $psocratic_dir; \
+    #        please remove or move to another location before proceeding"
+    #psocratic_dir_env=$(detect_psocratic_dir_env) \
+    #    && logexit "detected environment variable PSOCRATIC_DIR=$psocratic_dir_env; \
+    #        please unset before proceeding"
+    #psocratic_dir_export=$(detect_psocratic_dir_export $shell_rc_file) \
+    #    && logerr "detected shell rc scripts that export PSOCRATIC_DIR:" \
+    #    && echo $psocratic_dir_export | while read line; do echo "\t$line"; done \
+    #    && logexit "please remove or comment out before proceeding"
 
-    "$thisdir/aws/google-sso" $copyargs
-    if [ 0 -ne $? ]; then
-        logexit "failed to log into Psocratic Google account"
-    fi
+    #install_deps \
+    #    || logexit "failed to install all deps"
+    aws_google_auth=$(aws_google_sso "$copyargs") \
+        || logexit "failed to log into Psocratic Google account"
+    github_auth=$(github_auth "$copyargs") \
+        || logexit "failed to log into GitHub"
+    github_token=$(echo "$github_auth" | $thisdir/deps/jq exec -r .token) \
+        || logexit "failed to parse token from\n$github_auth"
+    github_clone $github_token "$DEFAULT_PSOCRATIC_REPO" "$psocratic_dir" \
+        || logexit "failed to clone $DEFAULT_PSOCRATIC_REPO to $psocratic_dir"
+    shell_append_psocratic_init_to_rc_file $psocratic_dir $shell_rc_file
 
-    github_auth=$("$thisdir/github/auth" $copyargs)
-    if [ 0 -ne $? ]; then
-        logexit "failed to log into GitHub"
-    fi
-    github_token=$(echo "$github_auth" | $thisdir/deps/jq exec -r .token)
-    if [ 0 -ne $? ]; then
-        logexit "failed to parse token from\n$github_auth"
-    fi
-
-    "$thisdir/github/clone" \
-        -github-token $github_token \
-        -github-repo psocratic/psocratic \
-        -local-dest $psocratic_dir
-    if [ 0 -ne $? ]; then
-        logexit "failed to clone git@github.com/psocratic/psocratic to $psocratic_dir"
-    fi
+    export PSOCRATIC_DIR=$psocratic_dir && . $psocratic_dir/toolbelt/psocratic
+    psocratic_email=$(echo $aws_google_auth | jq -r .user_email)
+    psocratic user identify -email $psocratic_email \
+        -github-token $github_token
 }

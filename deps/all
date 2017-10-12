@@ -1,0 +1,53 @@
+#!/usr/bin/env sh
+
+{
+    thisfile="$0"
+    thisdir="$(dirname $0)"
+    . "$thisdir/../common"
+
+    all_install_dep() {
+        dep=$1
+        depscript="$thisdir/$dep"
+        if [ ! -f $depscript ] || [ ! -x $depscript ]; then
+            logerr "cannot install $dep: $depscript not found or not executable"
+            exit 1
+        fi
+
+        if ! $depscript check; then
+            log "installing $dep"
+            for subdep in $($depscript deps); do
+                log " => $dep depends on $subdep"
+                unset dep
+                unset depscript
+                all_install_dep $subdep
+                dep=$1
+                depscript="$thisdir/$dep"
+            done
+            $depscript install
+            if ! $depscript check; then
+                logerr "failed to install $dep"
+                exit 1
+            fi
+        fi
+    }
+
+    all_install() {
+        for depscript in $(find $thisdir -maxdepth 1 \
+            ! -name $(basename $thisfile) -type f); do
+            if [ -x $depscript ]; then
+                dep=$(basename $depscript)
+                all_install_dep $dep
+            fi
+        done
+    }
+
+    command=$1
+    case $command in
+        install)
+            all_$command "$@"
+            ;;
+        *)
+            logexit "command not supported: $command"
+            ;;
+    esac
+}

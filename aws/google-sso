@@ -11,7 +11,6 @@
         psocratic_email=""
         while [ $# -gt 0 ]; do
             arg=$1
-            logerr "arg=$arg"
             case $arg in
                 -psocratic-email)
                     psocratic_email=$2
@@ -27,7 +26,7 @@
             -u $psocratic_email \
             -I $GOOGLE_IDP_ID \
             -S $GOOGLE_SP_ID \
-            -p psocratic-installer
+            -p psocratic-installer 1>&2
         return $?
     }
 
@@ -52,6 +51,9 @@
     fi
 
     logerr "Logging into Psocratic Google account as $psocratic_email"
-    gen_aws_auth -psocratic-email $psocratic_email
-    exit $?
+    gen_aws_auth -psocratic-email $psocratic_email 1>&2
+    rc=$?
+
+    echo "{ \"user_email\": \"$psocratic_email\" }"
+    exit $rc
 }
