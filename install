@@ -59,7 +59,7 @@
         psocratic_dir="$1"
         shell_rc_file="$2"
 
-        rcstring="\n[ -d $psocratic_dir ] && export PSOCRATIC_DIR=\"$psocratic_dir\" && . $psocratic_dir/toolbelt/psocratic"
+        rcstring="\n[ -d $psocratic_dir ] && export PSOCRATIC_DIR=\"$psocratic_dir\" && export PATH=\"$psocratic_dir/toolbelt:\$PATH\""
 
         if [ -z "$shell_rc_file" ] \
             && ! shell_rc_file=$(shell_get_rc_file); then
@@ -87,9 +87,7 @@
         case $shell in
             bash) rcfile="$HOME/.bashrc" ;;
             zsh) rcfile="$HOME/.zshrc" ;;
-            *)
-                return 1
-                ;;
+            *) return 1 ;;
         esac
 
         echo $rcfile
@@ -131,8 +129,6 @@
         || logexit "failed to clone $DEFAULT_PSOCRATIC_REPO to $psocratic_dir"
     shell_append_psocratic_init_to_rc_file $psocratic_dir $shell_rc_file
 
-    export PSOCRATIC_DIR=$psocratic_dir && . $psocratic_dir/toolbelt/psocratic
-
     psocratic_email=$(echo $aws_google_auth \
         | $deps exec jq -r .user_email)
     aws_access_key=$(echo $aws_google_auth \
@@ -144,12 +140,15 @@
     aws_security_token=$(echo $aws_google_auth \
         | $deps exec jq -r .aws_security_token)
 
-    psocratic user identify                       \
-        -aws-access-key "$aws_access_key"         \
-        -aws-secret-key  "$aws_secret_key"        \
-        -aws-session-token "$aws_session_token"   \
-        -aws-security-token "$aws_security_token" \
-        -email "$psocratic_email"                 \
-        -github-token "$github_token"             \
+    export PSOCRATIC_DIR="$psocratic_dir"
+    export PATH="$psocratic_dir/toolbelt:$PATH" \
+    psocratic deps install                            \
+        && psocratic user identify                    \
+            -aws-access-key "$aws_access_key"         \
+            -aws-secret-key  "$aws_secret_key"        \
+            -aws-session-token "$aws_session_token"   \
+            -aws-security-token "$aws_security_token" \
+            -email "$psocratic_email"                 \
+            -github-token "$github_token"             \
         || return $?
 }
