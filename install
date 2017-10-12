@@ -141,7 +141,7 @@
         | $deps exec jq -r .aws_security_token)
 
     export PSOCRATIC_DIR="$psocratic_dir"
-    export PATH="$psocratic_dir/toolbelt:$PATH" \
+    export PATH="$psocratic_dir/toolbelt:$PATH"
     psocratic deps install                            \
         && psocratic user identify                    \
             -aws-access-key "$aws_access_key"         \
