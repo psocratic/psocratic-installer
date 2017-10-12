@@ -10,8 +10,7 @@
 
     cut_exec() {
         cutpath=$(cut_path)
-        $cutpath $@
-        return $?
+        $cutpath $@ || return $?
     }
 
     cut_deps() {

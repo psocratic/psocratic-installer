@@ -3,11 +3,18 @@
 {
     thisfile="$0"
     thisdir="$(dirname $0)"
-    . "$thisdir/../common"
+    . "$thisdir/common"
 
-    all_install_dep() {
+    deps_exec() {
         dep=$1
-        depscript="$thisdir/$dep"
+        depscript="$thisdir/deps.d/$dep"
+        shift
+        $depscript exec "$@" || return $?
+    }
+
+    deps_install_dep() {
+        dep=$1
+        depscript="$thisdir/deps.d/$dep"
         if [ ! -f $depscript ] || [ ! -x $depscript ]; then
             logerr "cannot install $dep: $depscript not found or not executable"
             exit 1
@@ -21,7 +28,7 @@
                 unset depscript
                 all_install_dep $subdep
                 dep=$1
-                depscript="$thisdir/$dep"
+                depscript="$thisdir/deps.d/$dep"
             done
             $depscript install
             if ! $depscript check; then
@@ -31,20 +38,20 @@
         fi
     }
 
-    all_install() {
-        for depscript in $(find $thisdir -maxdepth 1 \
-            ! -name $(basename $thisfile) -type f); do
+    deps_install() {
+        for depscript in $(find ${thisdir}/deps.d -maxdepth 1 -type f); do
             if [ -x $depscript ]; then
                 dep=$(basename $depscript)
-                all_install_dep $dep
+                deps_install_dep $dep
             fi
         done
     }
 
     command=$1
+    shift
     case $command in
-        install)
-            all_$command "$@"
+        exec | install)
+            deps_$command "$@"
             ;;
         *)
             logexit "command not supported: $command"

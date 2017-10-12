@@ -1,16 +1,15 @@
 #!/usr/bin/env sh
 
-{
+{   . "$(dirname $0)/../common"
+    deps="$(dirname $0)/../deps"
+
     head_check() {
-        if which head > /dev/null; then
-            return 0
-        fi
-        return 1
+        which head > /dev/null || return 1
     }
 
     head_exec() {
         headpath=$(head_path)
-        $headpath $@
+        $headpath "$@"
     }
 
     head_deps() {
@@ -23,14 +22,14 @@
     }
 
     head_path() {
-        which head
+        head_check && which head
     }
 
     command=$1
     shift
     case $command in
         check | deps | exec | install | path)
-            head_$command $@
+            head_$command "$@"
             ;;
     esac
 }

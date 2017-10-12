@@ -1,6 +1,8 @@
 #!/usr/bin/env sh
 
-{
+{   . "$(dirname $0)/../common"
+    deps="$(dirname $0)/../deps"
+
     pip_check() {
         PATH="$HOME/.local/bin:$PATH" 
         which pip3 > /dev/null && return 0
@@ -19,14 +21,11 @@
     }
 
     pip_install() {
-        sdir="$(dirname $0)"
-        curlscript="$sdir/curl"
-        pythonscript="$sdir/python"
-        if ! $curlscript exec https://bootstrap.pypa.io/get-pip.py > /tmp/get-pip.py; then
+        if ! $deps exec curl https://bootstrap.pypa.io/get-pip.py > /tmp/get-pip.py; then
             >&2 echo failed to download pip installer
             return 1
         fi
-        if ! $pythonscript exec /tmp/get-pip.py --user; then
+        if ! $deps exec python /tmp/get-pip.py --user; then
             >&2 echo failed to install pip
         fi
     }

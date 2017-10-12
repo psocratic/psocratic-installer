@@ -1,6 +1,8 @@
 #!/usr/bin/env sh
 
-{
+{   . "$(dirname $0)/../common"
+    deps="$(dirname $0)/../deps"
+
     awscli_check() {
         if PATH="$PATH:$HOME/.local/bin" which aws > /dev/null; then
             return 0
@@ -19,9 +21,7 @@
     }
 
     awscli_install() {
-        sdir=$(dirname $0)
-        pipscript="$sdir/pip"
-        $pipscript exec install --upgrade --user awscli
+        $deps exec pip install --upgrade --user awscli
     }
 
     awscli_path() {

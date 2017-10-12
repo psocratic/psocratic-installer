@@ -2,6 +2,7 @@
 
 {
     . "$(dirname $0)/../../common"
+    deps="$(dirname $0)/../../deps"
 
     apt_check() {
         which apt-get > /dev/null
@@ -12,8 +13,7 @@
     }
 
     apt_install() {
-        sudo="$(dirname $0)/../sudo"
-        $sudo exec apt-get install \
+        $deps exec sudo apt-get install \
             -y --no-install-suggests \
             --no-install-recommends "$@"
     }

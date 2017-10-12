@@ -2,6 +2,7 @@
 
 {
     . "$(dirname $0)/../../common"
+    deps="$(dirname $0)/../../deps"
 
     macports_check() {
         which xcode-select > /dev/null || return 1
@@ -59,7 +60,7 @@
         # https://apple.stackexchange.com/a/195963
 		touch /tmp/.com.apple.dt.CommandLineTools.installondemand.in-progress;
 		PROD=$(softwareupdate -l |
-            $($grep exec "\*.*Command Line") |
+            $($deps exec grep "\*.*Command Line") |
 		    head -n 1 | awk -F"*" '{print $2}' |
 		    sed -e 's/^ *//' |
 		    tr -d '\n')

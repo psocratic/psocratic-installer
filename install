@@ -6,9 +6,7 @@
 
     thisdir="$(dirname $0)"
     . "$thisdir/common"
-
-    grepdep="$thisdir/deps/grep"
-    jqdep="$thisdir/deps/jq"
+    deps="$thisdir/deps"
 
     aws_google_sso() {
         "$thisdir/aws/google-sso" "$@"; return $?
@@ -31,7 +29,7 @@
     detect_psocratic_dir_export() {
         shell_rc_file="$1"
         source="$HOME/.*shrc $HOME/.*profile $shell_rc_file"
-        results=$($grepdep exec -nsP '^(?!\s*#\s*)[^#]*export\s+PSOCRATIC_DIR' $source)
+        results=$($deps exec grep -nsP '^(?!\s*#\s*)[^#]*export\s+PSOCRATIC_DIR' $source)
 
         if [ -n "$results" ]; then
             echo "$results"
@@ -54,7 +52,7 @@
     }
 
     install_deps() {
-        "$(dirname $0)/deps/all" install; return $?
+        "$(dirname $0)/deps" install; return $?
     }
 
     shell_append_psocratic_init_to_rc_file() {
@@ -76,7 +74,7 @@
             echo "$rcstring" >> "$shell_rc_file"
         else
             echo "$rcstring" >> "$HOME/.profile"
-            if ! $($grepdep exec -sqP \
+            if ! $($deps exec grep -sqP \
                     "^\s*.\s*($HOME/|\$HOME|~/).profile" "$shell_rc_file"); then
                 echo "\n. \$HOME/.profile" >> "$shell_rc_file"
             fi
@@ -127,7 +125,7 @@
         || logexit "failed to log into Psocratic Google account"
     github_auth=$(github_auth "$copyargs") \
         || logexit "failed to log into GitHub"
-    github_token=$(echo "$github_auth" | $thisdir/deps/jq exec -r .token) \
+    github_token=$(echo "$github_auth" | $deps exec jq -r .token) \
         || logexit "failed to parse token from\n$github_auth"
     github_clone $github_token "$DEFAULT_PSOCRATIC_REPO" "$psocratic_dir" \
         || logexit "failed to clone $DEFAULT_PSOCRATIC_REPO to $psocratic_dir"
@@ -136,15 +134,15 @@
     export PSOCRATIC_DIR=$psocratic_dir && . $psocratic_dir/toolbelt/psocratic
 
     psocratic_email=$(echo $aws_google_auth \
-        | $thisdir/deps/jq exec -r .user_email)
+        | $deps exec jq -r .user_email)
     aws_access_key=$(echo $aws_google_auth \
-        | $thisdir/deps/jq exec -r .aws_access_key_id)
+        | $deps exec jq -r .aws_access_key_id)
     aws_secret_key=$(echo $aws_google_auth \
-        | $thisdir/deps/jq exec -r .aws_secret_access_key)
+        | $deps exec jq -r .aws_secret_access_key)
     aws_session_token=$(echo $aws_google_auth \
-        | $thisdir/deps/jq exec -r .aws_session_token)
+        | $deps exec jq -r .aws_session_token)
     aws_security_token=$(echo $aws_google_auth \
-        | $thisdir/deps/jq exec -r .aws_security_token)
+        | $deps exec jq -r .aws_security_token)
 
     psocratic user identify                       \
         -aws-access-key "$aws_access_key"         \

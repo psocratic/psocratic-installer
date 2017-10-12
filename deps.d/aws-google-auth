@@ -1,6 +1,8 @@
 #!/usr/bin/env sh
 
-{
+{   . "$(dirname $0)/../common"
+    deps="$(dirname $0)/../deps"
+
     aws_google_auth_check() {
         PATH="$PATH:$HOME/.local/bin:$PATH" which aws-google-auth > /dev/null || return 1
     }
@@ -16,9 +18,7 @@
     }
 
     aws_google_auth_install() {
-        sdir=$(dirname $0)
-        pipscript="$sdir/pip"
-        $pipscript exec install --upgrade --user aws-google-auth
+        $deps exec pip install --upgrade --user aws-google-auth
     }
 
     aws_google_auth_path() {

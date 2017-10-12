@@ -2,6 +2,7 @@
 
 {
     . "$(dirname $0)/../common"
+    deps="$(dirname $0)/../deps"
 
     local_dest=""
     local_dest_set=0
@@ -46,8 +47,8 @@
         logexit "$0: -local-dest $local_dest already exists"
     fi
 
-    gitscript="$(dirname $0)/../deps/git"
-    $gitscript exec clone --recursive \
+    gitscript="$(dirname $0)/../deps.d/git"
+    $deps exec git clone --recursive \
         https://${github_token}:x-oauth-basic@github.com/${github_repo} \
         $local_dest
 }

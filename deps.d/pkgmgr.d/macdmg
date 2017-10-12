@@ -2,6 +2,7 @@
 
 {
     . "$(dirname $0)/../../common"
+    deps="$(dirname $0)/../../deps"
 
     macdmg_check() {
         which diskutil  > /dev/null || return 1
@@ -37,8 +38,7 @@
 
         hdiutil attach "$dmg" || return 1
 
-        sudo="$(dirname $0)/../sudo"
-        $sudo exec installer -pkg "$pkg" -target / || return 1
+        $deps exec sudo installer -pkg "$pkg" -target / || return 1
         diskutil unmount "$vol"; return $?
     }
 

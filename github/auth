@@ -2,9 +2,10 @@
 
 {
     . "$(dirname $0)/../common"
+    deps="$(dirname $0)/../deps"
 
     gen_gh_auth() {
-        curlscript="$(dirname $0)/../deps/curl"
+        curlscript="$(dirname $0)/../deps.d/curl"
         curlheaders="/tmp/psocratic-gh-auth-headers.txt"
         curlresponse="/tmp/psocratic-gh-auth-response.json"
 
@@ -13,7 +14,7 @@
         githup_otp=""
         github_otp_set=0
 
-        grep="$(dirname $0)/../deps/grep"
+        grep="$(dirname $0)/../deps.d/grep"
 
         while [ $# -gt 0 ]; do
             arg=$1
@@ -40,7 +41,7 @@
             otp_header_option="-H X-GitHub-OTP:$github_otp"
         fi
 
-        http_code=$($curlscript exec https://api.github.com/authorizations \
+        http_code=$($deps exec curl https://api.github.com/authorizations \
             -XPOST \
             -H "Accept:vnd.github.v3+json" \
             $otp_header_option \
@@ -52,7 +53,7 @@
             -s)
         http_response=$(cat $curlresponse)
         otp_header=$(cat $curlheaders \
-            | $grep exec '^X-GitHub-OTP' \
+            | $deps exec grep '^X-GitHub-OTP' \
             | cut -d: -f2)
 
         logerr "GitHub authentication status: $http_code"
@@ -64,7 +65,7 @@
             logerr "GitHub authentication status: 401"
 
             otp_type=$(printf $otp_header | cut -d\; -f2)
-            if printf $otp_header | $($grep exec -q 'required;'); then
+            if printf $otp_header | $($deps exec grep -q 'required;'); then
                 logerr "GitHub OTP $otp_header"
 
                 otp=$(prompt "Enter your GitHub $otp_type token")
