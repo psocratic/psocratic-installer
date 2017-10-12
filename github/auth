@@ -13,6 +13,8 @@
         githup_otp=""
         github_otp_set=0
 
+        grep="$(dirname $0)/../deps/grep"
+
         while [ $# -gt 0 ]; do
             arg=$1
             case $arg in
@@ -50,7 +52,7 @@
             -s)
         http_response=$(cat $curlresponse)
         otp_header=$(cat $curlheaders \
-            | grep '^X-GitHub-OTP' \
+            | $grep exec '^X-GitHub-OTP' \
             | cut -d: -f2)
 
         logerr "GitHub authentication status: $http_code"
@@ -62,7 +64,7 @@
             logerr "GitHub authentication status: 401"
 
             otp_type=$(printf $otp_header | cut -d\; -f2)
-            if printf $otp_header | grep -q 'required;'; then
+            if printf $otp_header | $($grep exec -q 'required;'); then
                 logerr "GitHub OTP $otp_header"
 
                 otp=$(prompt "Enter your GitHub $otp_type token")

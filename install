@@ -26,14 +26,10 @@
     }
 
     detect_psocratic_dir_export() {
-        if ! which grep > /dev/null; then
-            logerr "could not detect PSOCRATIC_DIR export: grep not found"
-            return 1
-        fi
-
+        grep="$(dirname $0)/deps/grep"
         shell_rc_file="$1"
         source="$HOME/.*shrc $HOME/.*profile $shell_rc_file"
-        results=$(grep -nsP '^(?!\s*#\s*)[^#]*export\s+PSOCRATIC_DIR' $source)
+        results=$($grep exec -nsP '^(?!\s*#\s*)[^#]*export\s+PSOCRATIC_DIR' $source)
 
         if [ -n "$results" ]; then
             echo "$results"
@@ -60,10 +56,11 @@
     }
 
     shell_append_psocratic_init_to_rc_file() {
+        grep="$(dirname $0)/deps/grep"
         psocratic_dir="$1"
         shell_rc_file="$2"
 
-        rcstring="[ -d $psocratic_dir ] && export PSOCRATIC_DIR=\"$psocratic_dir\" && . $psocratic_dir/toolbelt/psocratic"
+        rcstring="\n[ -d $psocratic_dir ] && export PSOCRATIC_DIR=\"$psocratic_dir\" && . $psocratic_dir/toolbelt/psocratic"
 
         if [ -z "$shell_rc_file" ] \
             && ! shell_rc_file=$(shell_get_rc_file); then
@@ -73,15 +70,16 @@
             return 1
         fi
 
-        echo "$rcstring" >> "$shell_rc_file"
-
-        case "$(uname -s)" in
-            Darwin)
-                if ! grep -sqP "^[[:space]]*.[[:space]]*($HOME/|~/).profile" "$rcfile"; then
-                    echo ". $HOME/.profile" >> "$rcfile"
-                fi
-                ;;
-        esac
+        uname="$(uname -s)"
+        if [ "$uname" != "Darwin" ]; then
+            echo "$rcstring" >> "$shell_rc_file"
+        else
+            echo "$rcstring" >> "$HOME/.profile"
+            if ! $($grep exec -sqP \
+                    "^\s*.\s*($HOME/|\$HOME|~/).profile" "$shell_rc_file"); then
+                echo "\n. \$HOME/.profile" >> "$shell_rc_file"
+            fi
+        fi
     }
 
     shell_get_rc_file() {
@@ -110,6 +108,9 @@
         shift
     done
 
+    install_deps \
+        || logexit "failed to install all deps"
+
     detect_psocratic_dir $psocratic_dir \
         && logexit "-psocratic-dir already exists at $psocratic_dir; \
             please remove or move to another location before proceeding"
@@ -121,8 +122,6 @@
         && echo $psocratic_dir_export | while read line; do echo "\t$line"; done \
         && logexit "please remove or comment out before proceeding"
 
-    install_deps \
-        || logexit "failed to install all deps"
     aws_google_auth=$(aws_google_sso "$copyargs") \
         || logexit "failed to log into Psocratic Google account"
     github_auth=$(github_auth "$copyargs") \
@@ -134,7 +133,8 @@
     shell_append_psocratic_init_to_rc_file $psocratic_dir $shell_rc_file
 
     export PSOCRATIC_DIR=$psocratic_dir && . $psocratic_dir/toolbelt/psocratic
-    psocratic_email=$(echo $aws_google_auth | jq -r .user_email)
+    psocratic_email=$(echo $aws_google_auth \
+        | $thisdir/deps/jq exec  jq -r .user_email)
     psocratic user identify -email $psocratic_email \
         -github-token $github_token
 }

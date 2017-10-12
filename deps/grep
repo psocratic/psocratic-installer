@@ -1,16 +1,17 @@
 #!/usr/bin/env sh
 
 {
+    . "$(dirname $0)/../common"
+
     grep_check() {
-        if which grep > /dev/null; then
-            return 0
-        fi
-        return 1
+        PATH="$HOME/.local/bin:$PATH"
+        which grep > /dev/null || return 1
+        echo teststring | grep -qP teststring 2>/dev/null || return 1
     }
 
     grep_exec() {
         greppath=$(grep_path)
-        $greppath $@
+        $greppath "$@"
     }
 
     grep_deps() {
@@ -18,19 +19,27 @@
     }
 
     grep_install() {
-        >&2 echo "grep will not be installed automatically"
-        exit 1
+        uname=$(uname -a)
+        if [ "$uname" = "Darwin" ]; then
+            pkgmgr="$(dirname $0)/pkgmgr"
+            "$pkgmgr" install grep
+        else
+            logerr "will not automatically install grep"
+            return 1
+        fi
     }
 
     grep_path() {
-        which grep
+        grep_check && PATH="$HOME/.local/bin:$PATH" which grep
     }
 
     command=$1
     shift
     case $command in
-        check | deps)
-            grep_$command $@
+        check | deps | exec | install | path)
+            grep_$command "$@"
             ;;
+        *)
+            logexit "grep does not support command: $command"
     esac
 }

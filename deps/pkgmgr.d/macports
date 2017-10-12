@@ -47,7 +47,7 @@
     }
 
     macports_selfinstall_developer_command_line_tools() {
-        logerr checking mac deps
+        grep="$(dirname $0)/../grep"
         for dep in softwareupdate; do
             if ! which $dep > /dev/null; then
                 logerr "$dep not found, cannot be installed automatically"
@@ -59,7 +59,7 @@
         # https://apple.stackexchange.com/a/195963
 		touch /tmp/.com.apple.dt.CommandLineTools.installondemand.in-progress;
 		PROD=$(softwareupdate -l |
-		    grep "\*.*Command Line" |
+            $($grep exec "\*.*Command Line") |
 		    head -n 1 | awk -F"*" '{print $2}' |
 		    sed -e 's/^ *//' |
 		    tr -d '\n')
