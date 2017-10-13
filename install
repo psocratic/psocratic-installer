@@ -105,6 +105,7 @@
         shift
     done
 
+    log "installing psocratic"
     install_deps \
         || logexit "failed to install all deps"
 
@@ -131,9 +132,9 @@
 
     psocratic_email=$(echo $aws_google_auth \
         | $deps exec jq -r .user_email)
-    aws_access_key=$(echo $aws_google_auth \
+    aws_access_key_id=$(echo $aws_google_auth \
         | $deps exec jq -r .aws_access_key_id)
-    aws_secret_key=$(echo $aws_google_auth \
+    aws_secret_access_key=$(echo $aws_google_auth \
         | $deps exec jq -r .aws_secret_access_key)
     aws_session_token=$(echo $aws_google_auth \
         | $deps exec jq -r .aws_session_token)
@@ -142,13 +143,13 @@
 
     export PSOCRATIC_DIR="$psocratic_dir"
     export PATH="$psocratic_dir/toolbelt:$PATH"
-    psocratic deps install                            \
-        && psocratic user identify                    \
-            -aws-access-key "$aws_access_key"         \
-            -aws-secret-key  "$aws_secret_key"        \
-            -aws-session-token "$aws_session_token"   \
-            -aws-security-token "$aws_security_token" \
-            -email "$psocratic_email"                 \
-            -github-token "$github_token"             \
-        || return $?
+    psocratic init                                       \
+        -aws-access-key-id "$aws_access_key_id"          \
+        -aws-secret-access-key  "$aws_secret_access_key" \
+        -aws-session-token "$aws_session_token"          \
+        -aws-security-token "$aws_security_token"        \
+        -email "$psocratic_email"                        \
+        -github-token "$github_token"                    \
+    || return $?
+    log "successfully installed psocratic"
 }
