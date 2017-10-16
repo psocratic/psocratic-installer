@@ -68,7 +68,7 @@
     fi
 
     logerr "Logging into Psocratic Google account as $psocratic_email"
-    aws_gen_auth -psocratic-email $psocratic_email 1>&2 || return $?
+    aws_gen_auth -psocratic-email $psocratic_email 1>&2 || exit $?
 
     aws_creds_to_json \
         $HOME/.aws/credentials $AWS_CREDS_PROFILE \
