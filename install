@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 
 {
-    DEFAULT_PSOCRATIC_DIR="$HOME/.psocratic"
+    DEFAULT_PSOCRATIC_HOME="$HOME/.psocratic"
     DEFAULT_PSOCRATIC_REPO="psocratic/psocratic"
 
     thisdir="$(dirname $0)"
@@ -12,30 +12,30 @@
         "$thisdir/aws/google-sso" "$@"; return $?
     }
 
-    detect_psocratic_dir() {
+    detect_psocratic_home() {
         [ -e "$1" ] && return 0 || return 1
     }
 
-    detect_psocratic_dir_env() {
-        if [ -n "$PSOCRATIC_DIR" ]; then
-            echo "$PSOCRATIC_DIR"
+    detect_psocratic_home_env() {
+        if [ -n "$PSOCRATIC_HOME" ]; then
+            echo "$PSOCRATIC_HOME"
             return 0
         else
-            logerr "no PSOCRATIC_DIR environment variable detected"
+            logerr "no PSOCRATIC_HOME environment variable detected"
             return 1
         fi
     }
 
-    detect_psocratic_dir_export() {
+    detect_psocratic_home_export() {
         shell_rc_file="$1"
         source="$HOME/.*shrc $HOME/.*profile $shell_rc_file"
-        results=$($deps exec grep -nsP '^(?!\s*#\s*)[^#]*export\s+PSOCRATIC_DIR' $source)
+        results=$($deps exec grep -nsP '^(?!\s*#\s*)[^#]*export\s+PSOCRATIC_HOME' $source)
 
         if [ -n "$results" ]; then
             echo "$results"
             return 0
         else
-            logerr "no PSOCRATIC_DIR export detected"
+            logerr "no PSOCRATIC_HOME export detected"
             return 1
         fi
     }
@@ -56,10 +56,10 @@
     }
 
     shell_append_psocratic_init_to_rc_file() {
-        psocratic_dir="$1"
+        psocratic_home="$1"
         shell_rc_file="$2"
 
-        rcstring="\n[ -d $psocratic_dir ] && export PSOCRATIC_DIR=\"$psocratic_dir\" && export PATH=\"$psocratic_dir/toolbelt:\$PATH\""
+        rcstring="\n[ -d $psocratic_home ] && export PSOCRATIC_HOME=\"$psocratic_home\" && export PATH=\"$psocratic_home/toolbelt:\$PATH\""
 
         if [ -z "$shell_rc_file" ] \
             && ! shell_rc_file=$(shell_get_rc_file); then
@@ -94,12 +94,12 @@
     }
 
     copyargs="$@"
-    psocratic_dir="$DEFAULT_PSOCRATIC_DIR"
+    psocratic_home="$DEFAULT_PSOCRATIC_HOME"
     shell_rc_file=""
     while [ $# -gt 0 ]; do
         arg=$1
         case $arg in
-            -psocratic-dir) psocratic_dir=$2 shift ;;
+            -psocratic-home) psocratic_home=$2 shift ;;
             -shell-rc-file) shell_rc_file=$2 shift ;;
         esac
         shift
@@ -109,15 +109,15 @@
     install_deps \
         || logexit "failed to install all deps"
 
-    detect_psocratic_dir $psocratic_dir \
-        && logexit "-psocratic-dir already exists at $psocratic_dir; \
+    detect_psocratic_home $psocratic_home \
+        && logexit "-psocratic-home already exists at $psocratic_home; \
             please remove or move to another location before proceeding"
-    psocratic_dir_env=$(detect_psocratic_dir_env) \
-        && logexit "detected environment variable PSOCRATIC_DIR=$psocratic_dir_env; \
+    psocratic_home_env=$(detect_psocratic_home_env) \
+        && logexit "detected environment variable PSOCRATIC_HOME=$psocratic_home_env; \
             please unset before proceeding"
-    psocratic_dir_export=$(detect_psocratic_dir_export $shell_rc_file) \
-        && logerr "detected shell rc scripts that export PSOCRATIC_DIR:" \
-        && echo $psocratic_dir_export | while read line; do echo "\t$line"; done \
+    psocratic_home_export=$(detect_psocratic_home_export $shell_rc_file) \
+        && logerr "detected shell rc scripts that export PSOCRATIC_HOME:" \
+        && echo $psocratic_home_export | while read line; do echo "\t$line"; done \
         && logexit "please remove or comment out before proceeding"
 
     aws_google_auth=$(aws_google_sso "$copyargs") \
@@ -126,9 +126,9 @@
         || logexit "failed to log into GitHub"
     github_token=$(echo "$github_auth" | $deps exec jq -r .token) \
         || logexit "failed to parse token from\n$github_auth"
-    github_clone $github_token "$DEFAULT_PSOCRATIC_REPO" "$psocratic_dir" \
-        || logexit "failed to clone $DEFAULT_PSOCRATIC_REPO to $psocratic_dir"
-    shell_append_psocratic_init_to_rc_file $psocratic_dir $shell_rc_file
+    github_clone $github_token "$DEFAULT_PSOCRATIC_REPO" "$psocratic_home" \
+        || logexit "failed to clone $DEFAULT_PSOCRATIC_REPO to $psocratic_home"
+    shell_append_psocratic_init_to_rc_file $psocratic_home $shell_rc_file
 
     psocratic_email=$(echo $aws_google_auth \
         | $deps exec jq -r .user_email)
@@ -141,8 +141,8 @@
     aws_security_token=$(echo $aws_google_auth \
         | $deps exec jq -r .aws_security_token)
 
-    export PSOCRATIC_DIR="$psocratic_dir"
-    export PATH="$psocratic_dir/toolbelt:$PATH"
+    export PSOCRATIC_HOME="$psocratic_home"
+    export PATH="$psocratic_home/toolbelt:$PATH"
     psocratic init                                       \
         -aws-access-key-id "$aws_access_key_id"          \
         -aws-secret-access-key  "$aws_secret_access_key" \
