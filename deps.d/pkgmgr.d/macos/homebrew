@@ -1,0 +1,97 @@
+#!/usr/bin/env sh
+
+{
+    . "$(dirname $0)/../../../common"
+    deps="$(dirname $0)/../../../deps"
+
+    homebrew_check() {
+        which xcode-select > /dev/null || return 1
+        test -d $(xcode-select -p) || return 1
+        test -x "$(xcode-select -p)/usr/bin/gcc" || return 1
+        PATH="$HOME/.local/bin:$PATH" which brew > /dev/null || return 1
+    }
+
+    homebrew_deps() {
+        echo "curl grep head sed ruby tr"
+    }
+
+    homebrew_exec() {
+        PATH="$HOME/.local/bin:$PATH" brew $@
+    }
+
+    homebrew_install() {
+        homebrew_exec install $@
+    }
+
+    homebrew_name() {
+        echo "brew"
+    }
+
+    homebrew_path() {
+        homebrew_check && \
+            PATH="$HOME/.local/bin:$PATH" which brew
+    }
+
+    homebrew_selfinstall() {
+        homebrew_selfinstall_developer_command_line_tools
+        if [ $? -ne 0 ]; then
+            logerr "failed to install Xcode CommandLineTools"
+            return 1
+        fi
+
+        homebrew_selfinstall_homebrew
+        if [ $? -ne 0 ]; then
+            logerr "failed to install Homebrew"
+            return 1
+        fi
+    }
+
+    homebrew_selfinstall_developer_command_line_tools() {
+        for dep in softwareupdate; do
+            if ! which $dep > /dev/null; then
+                logerr "$dep not found, cannot be installed automatically"
+                return 1
+            fi
+        done
+
+        logerr installing Xcode CommandLineTools
+        # https://apple.stackexchange.com/a/195963
+		touch /tmp/.com.apple.dt.CommandLineTools.installondemand.in-progress;
+		PROD=$(softwareupdate -l |
+            $($deps exec grep "\*.*Command Line") |
+		    head -n 1 | awk -F"*" '{print $2}' |
+		    sed -e 's/^ *//' |
+		    tr -d '\n')
+
+		softwareupdate -i "$PROD" --verbose;
+        return $?
+    }
+
+    homebrew_selfinstall_homebrew() {
+        logerr downloading and installing Homebrew
+        rubyscript=$($deps exec curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)
+        if [ $? -ne 0 ]; then
+            logerr "failed to download Homebrew installer"
+            return 1
+        fi
+
+        $deps exec ruby -e "$rubyscript" < /dev/null
+        if [ $? -ne 0 ]; then
+            logerr "failed to run Homebrew installer"
+            return 1
+        fi
+
+        return $?
+    }
+
+    command=$1
+    shift 1
+    case $command in
+        check | deps | install | name | selfinstall)
+            homebrew_$command "$@"
+            ;;
+        *)
+            logexit "unsupported command for homebrew pkgmgr $command"
+            ;;
+    esac
+}

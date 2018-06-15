@@ -1,0 +1,41 @@
+#!/usr/bin/env sh
+
+{
+    . "$(dirname $0)/../../../common"
+    deps="$(dirname $0)/../../../deps"
+
+    yum_check() {
+        which yum > /dev/null
+    }
+
+    yum_deps() {
+        echo ""
+    }
+
+    yum_install() {
+        $deps exec sudo yum install -y "$@"
+    }
+
+    yum_name() {
+        echo "yum"
+    }
+
+    yum_path() {
+        yum_check && which yum
+    }
+
+    yum_selfinstall() {
+        logexit "yum will not be automatically installed"
+    }
+
+    command=$1
+    shift 1
+    case $command in
+        check | deps | install | name | path | selfinstall)
+            yum_$command "$@"
+            ;;
+        *)
+            logexit "unsupported command for yum pkgmgr $command"
+            ;;
+    esac
+}

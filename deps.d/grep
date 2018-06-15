@@ -6,7 +6,7 @@
     grep_check() {
         PATH="$HOME/.local/bin:$PATH"
         which grep > /dev/null || return 1
-        echo teststring | grep -qP teststring 2>/dev/null || return 1
+        echo teststring | grep -q teststring 2>/dev/null || return 1
     }
 
     grep_exec() {

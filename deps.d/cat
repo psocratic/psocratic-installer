@@ -1,0 +1,36 @@
+#!/usr/bin/env sh
+
+{
+    cat_check() {
+        if which cat > /dev/null; then
+            return 0
+        fi
+        return 1
+    }
+
+    cat_exec() {
+        catpath=$(cat_path)
+        $catpath $@ || return $?
+    }
+
+    cat_deps() {
+        echo ""
+    }
+
+    cat_install() {
+        >&2 echo "cat will not be installed automatically"
+        exit 1
+    }
+
+    cat_path() {
+        which cat
+    }
+
+    command=$1
+    shift
+    case $command in
+        check | deps)
+            cat_$command $@
+            ;;
+    esac
+}

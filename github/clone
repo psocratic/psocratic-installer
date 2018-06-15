@@ -4,8 +4,10 @@
     . "$(dirname $0)/../common"
     deps="$(dirname $0)/../deps"
 
+    force=0
     local_dest=""
     local_dest_set=0
+    github_branch="master"
     github_token=""
     github_token_set=0
     github_repo=""
@@ -14,6 +16,13 @@
     while [ $# -gt 0 ]; do
         arg=$1
         case $arg in
+            -force)
+                force=1
+                ;;
+            -github-branch)
+                github_branch=$2
+                shift
+                ;;
             -github-token)
                 github_token=$2
                 github_token_set=1
@@ -33,22 +42,24 @@
         shift
     done
 
-    if [ $github_token_set -eq 0 ]; then
-        logexit "$0: -github-token was not provided"
-    fi
     if [ $github_repo_set -eq 0 ]; then
         logexit "$0: -github-repo was not provided"
+    fi
+    if [ $github_token_set -eq 0 ]; then
+        logexit "$0: -github-token was not provided"
     fi
     if [ $local_dest_set -eq 0 ]; then
         logexit "$0: -local-dest was not provided"
     fi
 
-    if [ -e $local_dest ]; then
+    if [ -e $local_dest ] && [ $force -eq 0 ]; then
         logexit "$0: -local-dest $local_dest already exists"
     fi
 
     gitscript="$(dirname $0)/../deps.d/git"
-    $deps exec git clone --recursive \
+    $deps exec git clone \
+        --recursive \
+        -b $github_branch \
         https://${github_token}:x-oauth-basic@github.com/${github_repo} \
         $local_dest
 }

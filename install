@@ -1,6 +1,7 @@
 #!/usr/bin/env sh
 
 {
+    DEFAULT_GITHUB_BRANCH="master"
     DEFAULT_PSOCRATIC_HOME="$HOME/.psocratic"
     DEFAULT_PSOCRATIC_REPO="psocratic/psocratic"
 
@@ -29,7 +30,9 @@
     detect_psocratic_home_export() {
         shell_rc_file="$1"
         source="$HOME/.*shrc $HOME/.*profile $shell_rc_file"
-        results=$($deps exec grep -nsP '^(?!\s*#\s*)[^#]*export\s+PSOCRATIC_HOME' $source)
+        results=$($deps exec cat $source \
+            | $deps exec grep -s 'export\s+PSOCRATIC_HOME' \
+            | $deps exec grep -v '^\s*#')
 
         if [ -n "$results" ]; then
             echo "$results"
@@ -45,21 +48,46 @@
     }
 
     github_clone() {
+        force=0
+        github_branch=""
+        github_token=""
+        github_repo=""
+        local_dest=""
+
+        while [ $# -gt 0 ]; do
+            arg=$1
+            case $arg in
+                -force) force=1 ;;
+                -github-branch) github_branch=$2 shift ;;
+                -github-repo) github_repo=$2 shift ;;
+                -github-token) github_token=$2 shift ;;
+                -local-dest) local_dest=$2 shift ;;
+            esac
+            shift
+        done
+
+        extra_args=""
+        if [ $force -eq 1 ]; then
+            extra_args="-force"
+        fi
         "$thisdir/github/clone" \
-            -github-token $1 \
-            -github-repo $2 \
-            -local-dest $3; return $?
+            $extra_args \
+            -github-branch $github_branch \
+            -github-repo $github_repo \
+            -github-token $github_token \
+            -local-dest $local_dest; return $?
     }
 
     install_deps() {
-        "$(dirname $0)/deps" install; return $?
+        deps_args="$@"
+        "$(dirname $0)/deps" install "$deps_args"; return $?
     }
 
     shell_append_psocratic_init_to_rc_file() {
         psocratic_home="$1"
         shell_rc_file="$2"
 
-        rcstring="\n[ -d $psocratic_home ] && export PSOCRATIC_HOME=\"$psocratic_home\" && export PATH=\"$psocratic_home/toolbelt:\$PATH\""
+        rcstring="[ -d $psocratic_home ] && export PSOCRATIC_HOME=\"$psocratic_home\" && export PATH=\"$psocratic_home/toolbelt:\$PATH\""
 
         if [ -z "$shell_rc_file" ] \
             && ! shell_rc_file=$(shell_get_rc_file); then
@@ -71,12 +99,16 @@
 
         uname="$(uname -s)"
         if [ "$uname" != "Darwin" ]; then
+            echo >> "$shell_rc_file"
             echo "$rcstring" >> "$shell_rc_file"
         else
+            echo >> "$HOME/.profile"
             echo "$rcstring" >> "$HOME/.profile"
-            if ! $($deps exec grep -sqP \
-                    "^\s*.\s*($HOME/|\$HOME|~/).profile" "$shell_rc_file"); then
-                echo "\n. \$HOME/.profile" >> "$shell_rc_file"
+            if ! $($deps exec cat $shell_rc_file \
+                | $deps exec grep -sq \
+                    "^\s*.\s*($HOME|\\\$HOME|~)/.profile"); then
+                echo >> "$shell_rc_file"
+                echo ". \$HOME/.profile" >> "$shell_rc_file"
             fi
         fi
     }
@@ -94,28 +126,39 @@
     }
 
     copyargs="$@"
+    deps_args=""
+    force=0
+    github_branch="$DEFAULT_GITHUB_BRANCH"
     psocratic_home="$DEFAULT_PSOCRATIC_HOME"
     shell_rc_file=""
     while [ $# -gt 0 ]; do
         arg=$1
         case $arg in
+            -github-branch) github_branch=$2 shift ;;
             -psocratic-home) psocratic_home=$2 shift ;;
+            -force) force=1 ;;
             -shell-rc-file) shell_rc_file=$2 shift ;;
+            -use-pkgmgr) deps_args="$deps_args -pkgmr $2" shift ;;
         esac
         shift
     done
 
     log "installing psocratic"
-    install_deps \
+    install_deps "$deps_args" \
         || logexit "failed to install all deps"
 
     detect_psocratic_home $psocratic_home \
-        && logexit "-psocratic-home already exists at $psocratic_home; \
+        && test $force -eq 0 \
+        && logexit "psocratic home already exists at $psocratic_home; \
             please remove or move to another location before proceeding"
+
     psocratic_home_env=$(detect_psocratic_home_env) \
+        && test $force -eq 0 \
         && logexit "detected environment variable PSOCRATIC_HOME=$psocratic_home_env; \
             please unset before proceeding"
+
     psocratic_home_export=$(detect_psocratic_home_export $shell_rc_file) \
+        && test $force -eq 0 \
         && logerr "detected shell rc scripts that export PSOCRATIC_HOME:" \
         && echo $psocratic_home_export | while read line; do echo "\t$line"; done \
         && logexit "please remove or comment out before proceeding"
@@ -126,7 +169,18 @@
         || logexit "failed to log into GitHub"
     github_token=$(echo "$github_auth" | $deps exec jq -r .token) \
         || logexit "failed to parse token from\n$github_auth"
-    github_clone $github_token "$DEFAULT_PSOCRATIC_REPO" "$psocratic_home" \
+    github_username=$(echo "$github_auth" | $deps exec jq -r .username) \
+        || logexit "failed to parse username from\n$github_auth"
+
+    github_clone_extra_args=""
+    if [ $force -eq 1 ]; then
+        github_clone_extra_args="-force"
+    fi
+    github_clone $github_clone_extra_args \
+        -github-branch "$github_branch" \
+        -github-repo "$DEFAULT_PSOCRATIC_REPO" \
+        -github-token $github_token \
+        -local-dest "$psocratic_home" \
         || logexit "failed to clone $DEFAULT_PSOCRATIC_REPO to $psocratic_home"
     shell_append_psocratic_init_to_rc_file $psocratic_home $shell_rc_file
 
@@ -150,6 +204,7 @@
         -aws-security-token "$aws_security_token"        \
         -email "$psocratic_email"                        \
         -github-token "$github_token"                    \
+        -github-username "$github_username"              \
     || return $?
     log "successfully installed psocratic"
 }

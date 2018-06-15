@@ -1,0 +1,39 @@
+#!/usr/bin/env sh
+
+{
+    ruby_check() {
+        PATH="$HOME/.local/bin:$PATH"
+        which ruby > /dev/null && return 0
+        return 1
+    }
+
+    ruby_deps() {
+        echo ""
+    }
+
+    ruby_exec() {
+        rubypath=$(ruby_path)
+        $rubypath $@
+    }
+
+    ruby_install() {
+        >&2 echo ruby will not be installed automatically
+        exit 1
+    }
+
+    ruby_path() {
+        PATH="$HOME/.local/bin:$PATH"
+        if which ruby > /dev/null; then
+            which ruby
+        fi
+        return 1
+    }
+
+    command=$1
+    shift
+    case $command in
+        check | deps | exec | install | path)
+            ruby_$command $@
+            ;;
+    esac
+}

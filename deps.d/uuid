@@ -28,16 +28,7 @@
         uname="$(uname -s)"
         case $uname in
             Linux*)
-                distro=$(lsb_release -is)
-                case $distro in
-                    Debian*|Ubuntu*)
-                        echo "uuid"
-                        return 0
-                        ;;
-                    *)
-                        return 1
-                        ;;
-                esac
+                echo "uuid"
                 ;;
             Darwin*)
                 echo "ossp-uuid"

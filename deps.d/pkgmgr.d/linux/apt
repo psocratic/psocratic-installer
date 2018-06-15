@@ -1,8 +1,8 @@
 #!/usr/bin/env sh
 
 {
-    . "$(dirname $0)/../../common"
-    deps="$(dirname $0)/../../deps"
+    . "$(dirname $0)/../../../common"
+    deps="$(dirname $0)/../../../deps"
 
     apt_check() {
         which apt-get > /dev/null
