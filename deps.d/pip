@@ -5,8 +5,8 @@
 
     pip_check() {
         PATH="$HOME/.local/bin:$PATH" 
-        which pip3 > /dev/null && return 0
         which pip > /dev/null && return 0
+        which pip3 > /dev/null && return 0
         return 1
     }
 
@@ -32,7 +32,7 @@
 
     pip_path() {
         PATH="$HOME/.local/bin:$PATH" 
-        for pip in pip3 pip; do
+        for pip in pip pip3; do
             if which $pip > /dev/null; then
                 which $pip
                 return
