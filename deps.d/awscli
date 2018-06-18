@@ -4,7 +4,7 @@
     deps="$(dirname $0)/../deps"
 
     awscli_check() {
-        if PATH="$PATH:$HOME/.local/bin" which aws > /dev/null; then
+        if PATH="$PATH:$HOME/.local/bin:$(python -m site --user-base)/bin" which aws > /dev/null; then
             return 0
         fi
         return 1
@@ -25,7 +25,7 @@
     }
 
     awscli_path() {
-        PATH="$PATH:$HOME/.local/bin" which aws
+        PATH="$PATH:$HOME/.local/bin:$(python -m site --user-base)/bin" which aws
     }
 
     command=$1
