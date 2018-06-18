@@ -14,6 +14,8 @@
 
     deps_install_dep() {
         dep=$1
+        args=$(printf "$@" | $deps exec cut -f2-)
+
         depscript="$thisdir/deps.d/$dep"
         if [ ! -f $depscript ] || [ ! -x $depscript ]; then
             logerr "cannot install $dep: $depscript not found or not executable"
@@ -26,13 +28,13 @@
                 log " => $dep depends on $subdep"
                 unset dep
                 unset depscript
-                all_install_dep $subdep
+                deps_install_dep $subdep "$args"
                 dep=$1
                 depscript="$thisdir/deps.d/$dep"
             done
-            $depscript install
+            $depscript install "$args"
             if ! $depscript check; then
-                logerr "failed to install $dep"
+                logerr "failed to install $dep [args: $args]"
                 exit 1
             fi
         fi
@@ -42,7 +44,7 @@
         for depscript in $(find ${thisdir}/deps.d -maxdepth 1 -type f); do
             if [ -x $depscript ]; then
                 dep=$(basename $depscript)
-                deps_install_dep $dep
+                deps_install_dep $dep "$@"
             fi
         done
     }

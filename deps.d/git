@@ -19,7 +19,7 @@
     }
 
     git_install() {
-        pkgmgr="$(dirname $0)/../pkgmgr"
+        pkgmgr="$(dirname $0)/pkgmgr"
         $pkgmgr install git
     }
 

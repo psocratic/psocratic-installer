@@ -1,10 +1,10 @@
 #!/usr/bin/env sh
 
 {
-    . "$(dirname $0)/../../common"
-    deps="$(dirname $0)/../../deps"
+    . "$(dirname $0)/../../../common"
+    deps="$(dirname $0)/../../../deps"
 
-    macports_check() {
+    ports_check() {
         which xcode-select > /dev/null || return 1
         test -d $(xcode-select -p) || return 1
         test -x "$(xcode-select -p)/usr/bin/gcc" || return 1
@@ -12,43 +12,42 @@
         PATH="$HOME/.local/bin:$PATH" port list > /dev/null || return 1
     }
 
-    macports_deps() {
+    ports_deps() {
         echo "curl grep head sed tr"
     }
 
-    macports_exec() {
+    ports_exec() {
         PATH="$HOME/.local/bin:$PATH" port $@
     }
 
-    macports_install() {
-        macports_exec -N install $@
+    ports_install() {
+        ports_exec -N install $@
     }
 
-    macports_name() {
+    ports_name() {
         echo "port"
     }
 
-    macports_path() {
-        macports_check && \
+    ports_path() {
+        ports_check && \
             PATH="$HOME/.local/bin:$PATH" which port
     }
 
-    macports_selfinstall() {
-        macports_selfinstall_developer_command_line_tools
+    ports_selfinstall() {
+        ports_selfinstall_developer_command_line_tools
         if [ $? -ne 0 ]; then
             logerr "failed to install Xcode CommandLineTools"
             return 1
         fi
 
-        macports_selfinstall_macports
+        ports_selfinstall_ports
         if [ $? -ne 0 ]; then
             logerr "failed to install MacPorts"
             return 1
         fi
     }
 
-    macports_selfinstall_developer_command_line_tools() {
-        grep="$(dirname $0)/../grep"
+    ports_selfinstall_developer_command_line_tools() {
         for dep in softwareupdate; do
             if ! which $dep > /dev/null; then
                 logerr "$dep not found, cannot be installed automatically"
@@ -69,10 +68,10 @@
         return $?
     }
 
-    macports_selfinstall_macports() {
-        version=$(macports_version)
+    ports_selfinstall_ports() {
+        version=$(ports_version)
         logerr downloading and unpacking MacPorts-$version
-        curl --progress-bar -L https://github.com/macports/macports-base/releases/download/v$version/MacPorts-$version.tar.gz | tar -zx -C /tmp/
+        curl --progress-bar -L https://github.com/ports/ports-base/releases/download/v$version/MacPorts-$version.tar.gz | tar -zx -C /tmp/
         if [ $? -ne 0 ]; then
             logerr "failed to download and unpac MacPorts-$version"
             return 1
@@ -92,11 +91,11 @@
             return 1
         fi
 
-        macports_exec -v selfupdate
+        ports_exec -v selfupdate
         return $?
     }
 
-    macports_version() {
+    ports_version() {
         echo "2.4.2"
     }
 
@@ -104,10 +103,10 @@
     shift 1
     case $command in
         check | deps | install | name | selfinstall)
-            macports_$command "$@"
+            ports_$command "$@"
             ;;
         *)
-            logexit "unsupported command for macports pkgmgr $command"
+            logexit "unsupported command for ports pkgmgr $command"
             ;;
     esac
 }

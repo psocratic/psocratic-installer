@@ -1,38 +1,58 @@
 #!/usr/bin/env sh
 
 {
+    . "$(dirname $0)/../common"
+    deps="$(dirname $0)/../deps"
+
+    system=""
     case "$(uname -s)" in
         Linux*)
-            distro=$(lsb_release -is)
-            if [ 0 -ne $? ]; then
-                logerr "could not determine linux distribution"
+            system="linux"
+            if which apt-get > /dev/null 2>&1; then
+                impl="apt-get"
+            elif which yum > /dev/null 2>&1; then
+                impl="yum"
+            else
+                return 1
             fi
-            case $distro in
-                Debian*|Ubuntu*)
-                    impl="apt"
-                    ;;
-                *)
-                    logerr "unsupported linux distribution $distro"
-                    exit 1
-                    ;;
-            esac
             ;;
         Darwin*)
-            impl="macports"
+            system="macos"
+            impl="homebrew"
             ;;
         *)
             return 1
     esac
 
-    command=$1
-    pkg_impl="${0}.d/$impl"
-    shift
+    args=""
+    while [ $# -gt 0 ]; do
+        arg=$1
+        case $arg in
+            -use-pkgmgr)
+                impl=$2
+                shift
+                ;;
+            *)
+                if [ -z "$args" ]; then
+                    args="$arg"
+                else
+                    args="$args $arg"
+                fi
+                ;;
+        esac
+        shift
+    done
+
+    command=$(printf "$args" | cut -d' ' -f1)
+    remainder=$(printf "$args" | cut -d' ' -f2-)
+    pkg_impl="${0}.d/$system/$impl"
+
     case $command in
         check | deps | install | name | path | selfinstall)
-            $pkg_impl $command $@
+            $pkg_impl $command $remainder
             ;;
         exec)
-            $pkg_impl install $@
+            $pkg_impl install $remainder
             ;;
         *)
             logexit "unrecognized pkgmgr command: $command"

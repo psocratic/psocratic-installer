@@ -1,20 +1,20 @@
 #!/usr/bin/env sh
 
 {
-    . "$(dirname $0)/../../common"
-    deps="$(dirname $0)/../../deps"
+    . "$(dirname $0)/../../../common"
+    deps="$(dirname $0)/../../../deps"
 
-    macdmg_check() {
+    dmg_check() {
         which diskutil  > /dev/null || return 1
         which hdiutil   > /dev/null || return 1
         which installer > /dev/null || return 1
     }
 
-    macdmg_deps() {
+    dmg_deps() {
         echo "sudo"
     }
 
-    macdmg_install() {
+    dmg_install() {
         dmg="" dmg_set=0
         pkg="" pkg_set=0
         vol="" vol_set=0
@@ -42,27 +42,27 @@
         diskutil unmount "$vol"; return $?
     }
 
-    macdmg_name() {
-        echo "macdmg"
+    dmg_name() {
+        echo "dmg"
     }
 
-    macdmg_path() {
-        macdmg_check
+    dmg_path() {
+        dmg_check
         echo $0
     }
 
-    macdmg_selfinstall() {
-        logexit "macdmg will not be automatically installed"
+    dmg_selfinstall() {
+        logexit "dmg will not be automatically installed"
     }
 
     command=$1
     shift 1
     case $command in
         check | deps | install | name | path | selfinstall)
-            macdmg_$command "$@"
+            dmg_$command "$@"
             ;;
         *)
-            logexit "unsupported command for macdmg pkgmgr $command"
+            logexit "unsupported command for dmg pkgmgr $command"
             ;;
     esac
 }
