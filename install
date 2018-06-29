@@ -190,18 +190,23 @@
         | $deps exec jq -r .aws_access_key_id)
     aws_secret_access_key=$(echo $aws_google_auth \
         | $deps exec jq -r .aws_secret_access_key)
-    aws_session_token=$(echo $aws_google_auth \
-        | $deps exec jq -r .aws_session_token)
     aws_security_token=$(echo $aws_google_auth \
         | $deps exec jq -r .aws_security_token)
+    aws_session_token=$(echo $aws_google_auth \
+        | $deps exec jq -r .aws_session_token)
+
+    extra_aws_args=""
+    if [ ! -z "$aws_session_token" ]; then
+        extra_aws_args="$extra_aws_args -aws-session-token $aws_session_token"
+    fi
 
     export PSOCRATIC_HOME="$psocratic_home"
     export PATH="$psocratic_home/toolbelt:$PATH"
     psocratic init                                       \
         -aws-access-key-id "$aws_access_key_id"          \
         -aws-secret-access-key  "$aws_secret_access_key" \
-        -aws-session-token "$aws_session_token"          \
         -aws-security-token "$aws_security_token"        \
+        "$extra_aws_args"                                \
         -email "$psocratic_email"                        \
         -github-token "$github_token"                    \
         -github-username "$github_username"              \
