@@ -206,7 +206,7 @@
         -aws-access-key-id "$aws_access_key_id"          \
         -aws-secret-access-key  "$aws_secret_access_key" \
         -aws-security-token "$aws_security_token"        \
-        "$extra_aws_args"                                \
+        $extra_aws_args                                  \
         -email "$psocratic_email"                        \
         -github-token "$github_token"                    \
         -github-username "$github_username"              \
